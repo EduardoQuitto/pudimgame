@@ -20,7 +20,6 @@ export class Missions {
       if ((this.s.data.stats[m.stat] ?? 0) >= m.need) {
         this.s.data.missions[m.id] = true;
         this.eco.addMoney(m.rw.money);
-        this.s.data.stats.earned += 0; // bônus não conta como faturamento
         this.prog.addXP(m.rw.xp);
         fresh.push(m);
       }

@@ -143,7 +143,6 @@ pesado, texturas procedurais via canvas (asfalto, calçada, fachadas, placas).
   typo "Equioso", cardápio estourado, chuva invisível, badge dentro do teto.
 
 ## Intervenção crítica — auditoria visual/técnica (QA por screenshot)
-
 Bugs críticos corrigidos (todos confirmados em imagem):
 - **Cabeça flutuante**: `buildFace` usava Y absoluto dentro do grupo local → crânio a 3.3m.
   Rosto remontado em coordenadas locais com medidas coerentes + boné reassentado.
@@ -159,3 +158,28 @@ Checklist: personagem/pedestres/motoristas verificados em close, rodas/pneus no 
 escala auditada (1.76m × sedã 1.55m × semáforo 4.2m × poste 5.4m), sem clipping/flutuação,
 steering com pivô pronto (rua é reta — nunca esterça), LOD por contagem fixa + sem sombra
 no fundo. Limites honestos: sem LOD geométrico progressivo, sem teste de vídeo em movimento.
+
+## Versão 4 — menus que funcionam, ULTRA real e gameplay com decisões
+
+Bugs reais corrigidos:
+- **CRÉDITOS/CONFIGURAÇÕES "mortos"**: telas abriam ATRÁS do menu (z-index) — pareciam não funcionar.
+  Overlays em z-40, pilha de Esc (fecha o topo, nunca prende), créditos com autor real.
+- **Postes que nunca existiram**: condição float `(x/12)%2` pulava todas as iterações —
+  a rua nunca teve lampiões. Recriados em posições assimétricas + `setLampLevel` por preset.
+- Cones de luz virando "fumaça" (opacidade 0.10→0.05), carro branco estourado no ULTRA.
+
+Gráficos (diferenças medidas por script, não cosméticas):
+- **Presets**: resolução (0.75–2.0× + supersampling no ALTO/ULTRA), sombras 512–2048 +
+  alcance estendido no ULTRA, chuva 120–2200, lâmpadas 2–4, neblina 93–247m, anisotropia,
+  reflexos liga/desliga, pedestres, partículas, ondulações exclusivas do ULTRA.
+- Individuais viram "Personalizado"; tudo persiste no save; detecção de hardware sugere
+  na 1ª execução; ULTRA nunca é reduzido sozinho (só avisa); AA documentado como limitação.
+
+Gameplay (decisões, não só loop):
+- **Pechincha**: exigente pode pagar -20% em vez de recusar; **pressa real**: apressado vai
+  embora em 8s parado; **última chamada**: fechar no amarelo paga +25%; **demanda** por fase
+  (-10%..+15%, anunciada no banner); **ritmo por produto** (água 0.8s × brigadeiro 1.5s);
+  economia rebalanceada (margem × volume); barra de tempo do combo no HUD.
+Cenário: skyline, fios de catenária, transformador, rampas + piso tátil.
+Testes: fluxo completo de menus, presets com estados verificados, save após reload,
+matemática de venda simulada — zero erros de console.

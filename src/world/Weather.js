@@ -5,6 +5,7 @@ export class Weather {
   constructor(scene, map, audio, onToast) {
     this.scene = scene; this.map = map; this.audio = audio; this.onToast = onToast;
     this.raining = false; this.rainT = 0; this.nextRain = 70 + Math.random() * 60;
+    this.fogK = 1; // multiplicador de alcance (qualidade + distância de visão)
     this.geo = null; this.points = null; this.vel = null;
     this.max = 2200;
     this.build();
@@ -36,10 +37,10 @@ export class Weather {
     this.audio.setRain(on);
     if (on) {
       this.rainT = dur;
-      this.scene.fog.near = 35; this.scene.fog.far = 130;
+      this.scene.fog.near = 35 * this.fogK; this.scene.fog.far = 130 * this.fogK;
       this.onToast('🌧 Chuva! Menos clientes, mas gorjetas maiores.', '');
     } else {
-      this.scene.fog.near = 55; this.scene.fog.far = 190;
+      this.scene.fog.near = 55 * this.fogK; this.scene.fog.far = 190 * this.fogK;
     }
   }
   setQualityCount(n) { this.count = n; this.geo.setDrawRange(0, n); }

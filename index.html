@@ -67,7 +67,7 @@
       <div id="hud-lvl"><span class="lvl-tag">NV <span id="hud-level">1</span></span><span id="hud-title">Iniciante</span>
         <div class="xpbar"><div id="hud-xp"></div></div>
       </div>
-      <div id="hud-combo" class="hidden"><svg class="ic fire"><use href="#i-flame"/></svg>x<span id="hud-combo-n">2</span></div>
+      <div id="hud-combo" class="hidden"><svg class="ic fire"><use href="#i-flame"/></svg>x<span id="hud-combo-n">2</span><div class="cb-bar"><div id="hud-combo-t"></div></div></div>
     </div>
     <div id="hud-top-right">
       <div id="hud-light" class="light green"><span class="dot"></span><span id="hud-light-txt">VERDE</span><span id="hud-light-t">20</span></div>
@@ -148,42 +148,68 @@
 
   <!-- SETTINGS -->
   <div id="settings" class="screen hidden">
-    <div class="panel small">
-      <h2>⚙️ CONFIGURAÇÕES</h2>
-      <label>Qualidade gráfica
-        <select id="set-quality">
-          <option value="low">BAIXO</option>
-          <option value="medium" selected>MÉDIO</option>
-          <option value="high">ALTO</option>
-          <option value="ultra">ULTRA</option>
-        </select>
-      </label>
-      <label>Sensibilidade do mouse <input id="set-sens" type="range" min="0.3" max="3" step="0.1" value="1" /></label>
-      <label><input id="set-invert" type="checkbox" /> Inverter eixo Y da câmera</label>
-      <label>Tamanho da interface
-        <select id="set-uiscale">
-          <option value="compact">COMPACTA</option>
-          <option value="normal" selected>NORMAL</option>
-          <option value="large">GRANDE</option>
-        </select>
-      </label>
-      <label><input id="set-fx" type="checkbox" checked /> Efeitos e partículas</label>
-      <label><input id="set-cb" type="checkbox" /> Modo daltônico (sem depender de vermelho/verde)</label>
-      <label><input id="set-shadows" type="checkbox" checked /> Sombras</label>
-      <label><input id="set-sound" type="checkbox" checked /> Som</label>
-      <label>Volume <input id="set-vol" type="range" min="0" max="100" value="70" /></label>
-      <button id="btn-settings-close" class="btn primary">VOLTAR</button>
+    <div class="panel">
+      <div class="panel-head"><h2>CONFIGURAÇÕES</h2><button id="btn-settings-close" class="icon-btn">✖</button></div>
+      <div class="set-grid">
+        <div class="set-sec">
+          <h3>GRÁFICOS</h3>
+          <label>Preset
+            <select id="set-quality">
+              <option value="low">BAIXO</option>
+              <option value="medium">MÉDIO</option>
+              <option value="high">ALTO</option>
+              <option value="ultra">ULTRA</option>
+              <option value="custom">PERSONALIZADO</option>
+            </select>
+          </label>
+          <p id="set-preset-note" class="muted"></p>
+          <label><input id="set-shadows" type="checkbox" checked /> Sombras dinâmicas</label>
+          <label><input id="set-refl" type="checkbox" checked /> Reflexos (metais/vidros/tintas)</label>
+          <label>Distância de visão
+            <select id="set-view"><option value="short">CURTA</option><option value="normal" selected>NORMAL</option><option value="long">LONGA</option></select>
+          </label>
+          <label>Partículas (chuva/poeira)
+            <select id="set-particles"><option value="low">REDUZIDAS</option><option value="normal" selected>NORMAL</option></select>
+          </label>
+          <label>Pedestres
+            <select id="set-npc"><option value="few">POUCOS</option><option value="all" selected>TODOS</option></select>
+          </label>
+          <label>Chuva
+            <select id="set-rainq"><option value="light">LEVE</option><option value="full" selected>CHEIA</option></select>
+          </label>
+        </div>
+        <div class="set-sec">
+          <h3>ÁUDIO</h3>
+          <label><input id="set-sound" type="checkbox" checked /> Som</label>
+          <label>Volume <input id="set-vol" type="range" min="0" max="100" value="70" /></label>
+          <h3>CONTROLES</h3>
+          <label>Sensibilidade <input id="set-sens" type="range" min="0.3" max="3" step="0.1" value="1" /></label>
+          <label><input id="set-invert" type="checkbox" /> Inverter eixo Y</label>
+          <h3>ACESSIBILIDADE</h3>
+          <label>Interface
+            <select id="set-uiscale"><option value="compact">COMPACTA</option><option value="normal" selected>NORMAL</option><option value="large">GRANDE</option></select>
+          </label>
+          <label><input id="set-fx" type="checkbox" checked /> Efeitos de gameplay</label>
+          <label><input id="set-cb" type="checkbox" /> Modo daltônico</label>
+        </div>
+      </div>
+      <div class="set-foot">
+        <button id="btn-settings-default" class="btn">RESTAURAR PADRÃO</button>
+        <button id="btn-settings-back" class="btn primary">VOLTAR</button>
+      </div>
     </div>
+  </div>
   </div>
 
   <!-- CREDITS -->
   <div id="credits" class="screen hidden">
-    <div class="panel small">
-      <h2>⭐ CRÉDITOS</h2>
-      <p><b>PUDIM STREET SIMULATOR</b> — um jogo 3D de navegador.</p>
-      <p>Engine: Three.js (WebGL) • Áudio 100% sintetizado via WebAudio • Sem assets externos.</p>
-      <p>Design, código, arte procedural e direção: o vendedor roxo. 🍮💜</p>
-      <button class="btn primary btn-close-help">VOLTAR</button>
+    <div class="panel small credits-box">
+      <svg class="brand-badge sm"><use href="#i-pudim"/></svg>
+      <h2>PUDIM STREET SIMULATOR</h2>
+      <p class="credit-line">Desenvolvido por</p>
+      <p class="credit-name">Eduardo Ivanova Quitto</p>
+      <p class="credit-line">Engine: Three.js (WebGL) • Build: Vite<br />Cenário 100% procedural • Áudio 100% sintetizado via WebAudio<br />Sem assets externos — todo modelo, textura e som gerados por código.</p>
+      <button class="btn primary btn-close-help" style="margin-top:14px;width:100%">VOLTAR</button>
     </div>
   </div>
 

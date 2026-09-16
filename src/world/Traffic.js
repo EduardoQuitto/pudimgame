@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../core/Config.js';
 import { CUSTOMER_TYPES } from '../data/Data.js';
 
-const CAR_COLORS = [0xc23b2e, 0x2e6dc2, 0xd9d9d9, 0x22262e, 0xe8a81c, 0x3fa34d, 0x7c3aed, 0xb8bfc9, 0x8a4a12, 0x1f8a8b];
+const CAR_COLORS = [0xc23b2e, 0x2e6dc2, 0xb8bcc4, 0x22262e, 0xe8a81c, 0x3fa34d, 0x7c3aed, 0x9aa0aa, 0x8a4a12, 0x1f8a8b];
 // compacto, sedan, SUV, van, táxi
 const TYPES = [
   { L: 3.3, H: 0.62, cabH: 0.55, cabL: 0.52, sp: 1.06, extra: 'spoiler' },
@@ -54,7 +54,7 @@ class Car {
     const T = this.type;
     const color = i % 5 === 4 ? 0xe8c81c : CAR_COLORS[i % CAR_COLORS.length]; // táxi sempre amarelo
     const bodyM = new THREE.MeshStandardMaterial({ color, roughness: 0.38, metalness: 0.3 });
-    bodyM.userData.envI = 0.7; // tinta com presença mesmo no lado sombra
+    bodyM.userData.envI = 0.5; // tinta com presença, sem estourar no ULTRA
     const glassM = new THREE.MeshStandardMaterial({
       color: [0x2a3a52, 0x33455c, 0x1c2836][i % 3], roughness: 0.12, metalness: 0.4,
       transparent: true, opacity: 0.82, // motorista visível através do vidro
@@ -216,6 +216,9 @@ class Car {
     this.laneOffset = (rng() - 0.5) * 0.7;
     this.goDelay = 0;
     this.reactT = 0; this.reactHideT = 0;
+    // APRESSADO tem paciência curta: se ninguém vender em 8s parado, ele desiste
+    this.patience = customer.id === 'apressado' ? 8 : Infinity;
+    this.stopT = 0; this.patienceGone = false; this.patienceToasted = false;
     this.group.visible = true;
     this.group.rotation.z = 0;
     this.group.position.set(x, 0, lane.z);
@@ -287,6 +290,10 @@ export class Traffic {
       c.tailMat.emissiveIntensity = (target < c.v - 0.5 || (c.v === 0 && !light.carsMayGo)) ? 3 : 1.2;
       // badge: ? durante a venda, ✓/✗ breve após resultado, ! parado vendável
       const stopped = c.v < 0.4 && !light.carsMayGo && !c.crazy;
+      if (stopped && !c.soldThisRed) {
+        c.stopT += dt;
+        if (c.stopT > c.patience) { c.soldThisRed = true; c.patienceGone = true; } // foi embora
+      } else if (!stopped) c.stopT = 0;
       if (c.reactHideT > 0) {
         c.reactHideT -= dt;
         if (c.reactHideT <= 0) c.badge.visible = false;

@@ -87,16 +87,42 @@ export class UI {
     $('btn-settings2').onclick = () => { this.syncSettings(); this.show('settings'); };
   }
   bindSettings() {
+    const S = () => this.g.save.data.settings;
+    const markCustom = () => {
+      if (S().quality !== 'custom') {
+        S().quality = 'custom';
+        $('set-quality').value = 'custom';
+        $('set-preset-note').textContent = 'Ajuste manual — preset: Personalizado.';
+      }
+    };
     $('btn-settings-close').onclick = () => { this.g.audio.ui(); this.hide('settings'); };
-    $('set-quality').onchange = (e) => this.g.applyQuality(e.target.value);
-    $('set-sens').oninput = (e) => { this.g.input.sens = +e.target.value; this.g.save.data.settings.sens = +e.target.value; };
-    $('set-invert').onchange = (e) => { this.g.input.invertY = e.target.checked; this.g.save.data.settings.invertY = e.target.checked; };
-    $('set-uiscale').onchange = (e) => { this.g.save.data.settings.uiscale = e.target.value; this.g.applyA11y(); this.g.save.save(); };
-    $('set-fx').onchange = (e) => { this.g.save.data.settings.reduceFx = !e.target.checked; this.g.effects.enabled = e.target.checked; this.g.save.save(); };
-    $('set-cb').onchange = (e) => { this.g.save.data.settings.colorblind = e.target.checked; this.g.applyA11y(); this.g.save.save(); };
-    $('set-shadows').onchange = (e) => { this.g.save.data.settings.shadows = e.target.checked; this.g.applyQuality(this.g.save.data.settings.quality); };
-    $('set-sound').onchange = (e) => { this.g.save.data.settings.sound = e.target.checked; this.g.audio.setMuted(!e.target.checked); };
-    $('set-vol').oninput = (e) => { this.g.save.data.settings.vol = +e.target.value; this.g.audio.setVolume(+e.target.value); };
+    $('btn-settings-back').onclick = () => { this.g.audio.ui(); this.hide('settings'); };
+    $('btn-settings-default').onclick = () => {
+      this.g.audio.ui();
+      Object.assign(S(), { quality: 'medium', sens: 1, shadows: true, sound: true, vol: 70, invertY: false, uiscale: 'normal', reduceFx: false, colorblind: false, refl: true, view: 'normal', particles: 'normal', npc: 'all', rainq: 'full' });
+      this.g.applyAllSettings();
+      this.syncSettings();
+      this.toast('Configurações restauradas para o padrão.', 'good');
+    };
+    $('set-quality').onchange = (e) => {
+      if (e.target.value === 'custom') { e.target.value = S().quality; return; }
+      this.g.applyPreset(e.target.value);
+      this.syncSettings();
+    };
+    // ajustes individuais (viram Personalizado e aplicam na hora)
+    $('set-shadows').onchange = (e) => { S().shadows = e.target.checked; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-refl').onchange = (e) => { S().refl = e.target.checked; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-view').onchange = (e) => { S().view = e.target.value; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-particles').onchange = (e) => { S().particles = e.target.value; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-npc').onchange = (e) => { S().npc = e.target.value; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-rainq').onchange = (e) => { S().rainq = e.target.value; markCustom(); this.g.applyAllSettings(); this.g.save.save(); };
+    $('set-sens').oninput = (e) => { this.g.input.sens = +e.target.value; S().sens = +e.target.value; this.g.save.save(); };
+    $('set-invert').onchange = (e) => { this.g.input.invertY = e.target.checked; S().invertY = e.target.checked; this.g.save.save(); };
+    $('set-uiscale').onchange = (e) => { S().uiscale = e.target.value; this.g.applyA11y(); this.g.save.save(); };
+    $('set-fx').onchange = (e) => { S().reduceFx = !e.target.checked; this.g.effects.enabled = e.target.checked; this.g.save.save(); };
+    $('set-cb').onchange = (e) => { S().colorblind = e.target.checked; this.g.applyA11y(); this.g.save.save(); };
+    $('set-sound').onchange = (e) => { S().sound = e.target.checked; this.g.audio.init(); this.g.audio.setMuted(!e.target.checked); this.g.updateMuteIcon(); this.g.save.save(); };
+    $('set-vol').oninput = (e) => { S().vol = +e.target.value; this.g.audio.init(); this.g.audio.setVolume(+e.target.value); this.g.save.save(); };
   }
   syncSettings() {
     const s = this.g.save.data.settings;
@@ -105,7 +131,21 @@ export class UI {
     $('set-uiscale').value = s.uiscale || 'normal';
     $('set-fx').checked = !s.reduceFx;
     $('set-cb').checked = !!s.colorblind;
-    $('set-shadows').checked = s.shadows; $('set-sound').checked = s.sound; $('set-vol').value = s.vol;
+    $('set-shadows').checked = s.shadows !== false;
+    $('set-refl').checked = s.refl !== false;
+    $('set-view').value = s.view || 'normal';
+    $('set-particles').value = s.particles || 'normal';
+    $('set-npc').value = s.npc || 'all';
+    $('set-rainq').value = s.rainq || 'full';
+    $('set-sound').checked = s.sound !== false;
+    $('set-vol').value = s.vol ?? 70;
+    $('set-preset-note').textContent = {
+      low: 'BAIXO: estabilidade máxima, sombras e reflexos reduzidos.',
+      medium: 'MÉDIO: equilíbrio entre qualidade e performance.',
+      high: 'ALTO: sombras 2K, reflexos totais, chuva cheia.',
+      ultra: 'ULTRA: o melhor do projeto — exige GPU forte. Nunca reduzido sozinho.',
+      custom: 'Ajuste manual — preset: Personalizado.',
+    }[s.quality] || '';
   }
   // ---------- HUD ----------
   updateHUD() {
@@ -118,7 +158,10 @@ export class UI {
     $('hud-xp').style.width = (d.xp / xpNext(d.level) * 100) + '%';
     const c = this.g.prog.combo;
     $('hud-combo').classList.toggle('hidden', c < 2);
-    if (c >= 2) $('hud-combo-n').textContent = c;
+    if (c >= 2) {
+      $('hud-combo-n').textContent = c;
+      $('hud-combo-t').style.width = (this.g.prog.comboT / 14 * 100) + '%';
+    }
     const L = this.g.light;
     const chip = $('hud-light');
     chip.className = 'light ' + L.state;
@@ -177,7 +220,7 @@ export class UI {
     $('tab-stock').innerHTML = `<div class="row"><div class="grow"><b>📦 Capacidade: ${eco.totalStock()}/${eco.capacity()}</b><div class="muted">Equipado: ${eco.equipped().icon} ${eco.equipped().name} (clique em "Equipar" na aba Produtos)</div></div></div>` +
       PRODUCTS.map(p => {
         const locked = !eco.unlocked(p);
-        return `<div class="row"><div style="font-size:26px">${p.icon}</div><div class="grow"><b>${p.name}</b> — em mãos: <b>${d.inv[p.id] ?? 0}</b><div class="muted">custo R$${p.cost} • vende R$${p.price} • chance ${Math.round(p.chance * 100)}%${locked ? ` • 🔒 desbloqueia com R$${p.unlock} faturados` : ''}</div></div>
+        return `<div class="row"><div style="font-size:26px">${p.icon}</div><div class="grow"><b>${p.name}</b> — em mãos: <b>${d.inv[p.id] ?? 0}</b><div class="muted">custo R$${p.cost} • vende R$${p.price} • chance ${Math.round(p.chance * 100)}% • ${p.pace}${locked ? ` • 🔒 desbloqueia com R$${p.unlock} faturados` : ''}</div></div>
         <button class="buy-btn" data-buy="${p.id}" ${locked ? 'disabled' : ''}>COMPRAR R$${p.cost}</button></div>`;
       }).join('');
     // produtos (desbloqueio + equipar)

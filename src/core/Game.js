@@ -23,6 +23,15 @@ import { UI } from '../ui/UI.js';
 import { TIPS } from '../data/Data.js';
 import { levelTitle, PRODUCTS } from '../data/Data.js';
 
+// Escala de render por nível: resolução, sombra, chuva, lâmpadas, alcance,
+// anisotropia, ondulações e spotlight. Recursos liga/desliga ficam no save.
+const PRESETS = {
+  low:    { pr: 0.75, shadow: 512,  rain: 400,  lamps: 2, fog: 0.7,  aniso: 2, ripple: false, headSpot: false },
+  medium: { pr: 1.0,  shadow: 1024, rain: 900,  lamps: 3, fog: 1.0,  aniso: 4, ripple: false, headSpot: true },
+  high:   { pr: 1.5,  shadow: 2048, rain: 1500, lamps: 4, fog: 1.1,  aniso: 8, ripple: false, headSpot: true },
+  ultra:  { pr: 2.0,  shadow: 2048, rain: 2200, lamps: 4, fog: 1.3,  aniso: 8, ripple: true,  headSpot: true },
+};
+
 const $ = (id) => document.getElementById(id);
 
 export class Game {
@@ -84,7 +93,15 @@ export class Game {
       this.selling = new Selling();
       this.ui = new UI(this);
 
-      this.applyQuality(st.quality || 'medium', true);
+      // migração de saves antigos + primeira execução com detecção de hardware
+      const S0 = this.save.data.settings;
+      if (!S0.base || !['low', 'medium', 'high', 'ultra'].includes(S0.base)) S0.base = S0.quality || 'medium';
+      for (const [k, v] of Object.entries({ shadows: true, refl: true, view: 'normal', particles: 'normal', npc: 'all', rainq: 'full' })) {
+        if (S0[k] === undefined) S0[k] = v;
+      }
+      this.applyAllSettings();
+      this._suggestHW = !S0.suggested;
+      S0.suggested = true;
       this.audio.setVolume(st.vol ?? 70);
       this.audio.setMuted(!st.sound);
       this.effects.enabled = !st.reduceFx;
@@ -93,8 +110,9 @@ export class Game {
       this.map.setShopTier(this.upgrades.shopTier());
       this.player.setTray(this.save.data.equipped);
       this.applyEnvReflections();
-      // sessão, hitstop, auto-qualidade, desbloqueios
+      // sessão, hitstop, auto-qualidade, desbloqueios, demanda
       this.session = null;
+      this.demand = 1;
       this.hitT = 0;
       this.fpsEMA = 60; this.fpsT = 0; this.qCooldown = 0;
       this.dustAcc = 0; this.threatT = 0; this.ambientHornT = 8;
@@ -113,6 +131,18 @@ export class Game {
         : 'Nenhum progresso ainda. Comece sua história!';
       this.ui.toMenu(info);
       this.hide('loading');
+      if (this._suggestHW) {
+        try {
+          const cores = navigator.hardwareConcurrency ?? 4, mem = navigator.deviceMemory ?? 8;
+          const weak = /Mobi|Android/i.test(navigator.userAgent) || cores <= 4 || mem <= 4;
+          if (weak && S0.quality === 'medium') {
+            this.applyPreset('low');
+            this.ui.toast('📉 Hardware modesto detectado: qualidade <b>BAIXO</b> sugerida.<br>Você pode mudar nas Configurações.', 'gold');
+          } else {
+            this.ui.toast(`🖥️ Qualidade sugerida: <b>${S0.quality.toUpperCase()}</b> (ajustável nas Configurações).`, '');
+          }
+        } catch { /* detecção é melhor esforço */ }
+      }
       if (this.save.corruptFound) {
         this.ui.toast('⚠️ Save corrompido foi descartado — começamos do zero.<br>Suas configurações foram mantidas.', 'bad');
       }
@@ -159,8 +189,13 @@ export class Game {
     this.renderer.setSize(innerWidth, innerHeight);
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape') {
-        if (this.shopOpen) { this.ui.closeShop(); this.ui.renderShop && null; }
-        else if (this.state === 'playing') this.pause();
+        // pilha de overlays: fecha o topo primeiro, nunca prende o jogador
+        for (const id of ['settings', 'help', 'credits']) {
+          if (!$(id).classList.contains('hidden')) { this.hide(id); this.audio.ui(); return; }
+        }
+        if (!$('summary').classList.contains('hidden')) { $('btn-sum-close').click(); return; }
+        if (this.shopOpen) { this.ui.closeShop(); return; }
+        if (this.state === 'playing') this.pause();
         else if (this.state === 'paused') this.resume();
       }
       if (e.code === 'KeyM') this.toggleMute();
@@ -194,6 +229,7 @@ export class Game {
     if (!this._pmrem) return;
     try {
       const envTex = this._pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      this._envTex = envTex;
       this.scene.environment = envTex;
       this.scene.traverse(o => {
         if (o.isMesh) {
@@ -288,31 +324,84 @@ export class Game {
   }
   updateMuteIcon() { $('btn-mute').innerHTML = `<svg class="ic"><use href="#i-${this.save.data.settings.sound ? 'sound' : 'mute'}"/></svg>`; }
 
-  applyQuality(q, first = false) {
-    const { QUALITY_LEVELS } = { QUALITY_LEVELS: ['low', 'medium', 'high', 'ultra'] };
-    if (!QUALITY_LEVELS.includes(q)) q = 'medium';
-    this.save.data.settings.quality = q;
-    const cfg = { low: { pr: 0.75 }, medium: { pr: 1 }, high: { pr: 1.5 }, ultra: { pr: 2 } }[q];
-    const pr = Math.min(devicePixelRatio || 1, cfg.pr);
-    this.renderer.setPixelRatio(pr);
+  // Presets REAIS: cada um muda renderização de verdade (não só texto).
+  // base = escala de render (pr, sombra, chuva, lâmpadas, alcance, aniso, ripple)
+  // individuais = recursos liga/desliga (sombras, reflexos, visão, partículas, npc, chuva)
+  applyPreset(name) {
+    const S = this.save.data.settings;
+    S.quality = name; S.base = name;
+    if (name === 'low') Object.assign(S, { shadows: false, refl: false, view: 'short', particles: 'low', npc: 'few', rainq: 'light' });
+    else if (name === 'medium') Object.assign(S, { shadows: true, refl: true, view: 'normal', particles: 'normal', npc: 'all', rainq: 'full' });
+    else Object.assign(S, { shadows: true, refl: true, view: 'normal', particles: 'normal', npc: 'all', rainq: 'full' });
+    this.applyAllSettings();
+    this.save.save();
+  }
+  applyAllSettings() {
+    const S = this.save.data.settings;
+    const base = (S.base && PRESETS[S.base]) ? S.base : 'medium';
+    const P = PRESETS[base];
+    // resolução interna: ULTRA/ALTO fazem supersampling real acima do display
+    this.renderer.setPixelRatio(Math.min(P.pr * (devicePixelRatio || 1), 2.5));
     this.renderer.setSize(innerWidth, innerHeight);
-    const sh = this.save.data.settings.shadows && q !== 'low';
-    this.renderer.shadowMap.enabled = sh;
-    this.sun.castShadow = sh;
-    const size = { low: 512, medium: 1024, high: 2048, ultra: 2048 }[q];
+    // sombras: liga/desliga + resolução + alcance por nível
+    this.renderer.shadowMap.enabled = !!S.shadows;
+    this.sun.castShadow = !!S.shadows;
+    const size = P.shadow;
     if (this.sun.shadow.mapSize.x !== size) {
       this.sun.shadow.mapSize.set(size, size);
       if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; }
     }
-    this.weather?.setQualityCount({ low: 400, medium: 900, high: 1500, ultra: 2200 }[q]);
-    if (!first) { this.ui?.syncSettings(); this.save.save(); }
+    const ext = base === 'ultra' ? 1.25 : 1;
+    Object.assign(this.sun.shadow.camera, { left: -45 * ext, right: 45 * ext, top: 30 * ext, bottom: -30 * ext });
+    this.sun.shadow.camera.updateProjectionMatrix();
+    // distância de visão (neblina)
+    this.applyFog();
+    // reflexos: liga/desliga de verdade
+    this.scene.environment = (S.refl && this._envTex) ? this._envTex : null;
+    // chuva: base do preset × qualidade × partículas
+    const rainN = Math.round(P.rain * (S.rainq === 'light' ? 0.5 : 1) * (S.particles === 'low' ? 0.6 : 1));
+    this.weather?.setQualityCount(rainN);
+    // lâmpadas reais por nível + pedestres + anisotropia + headlight
+    this.map?.setLampLevel(P.lamps);
+    this.map?.setAniso(P.aniso);
+    this.peds?.list.forEach((p, i) => { p.g.visible = S.npc === 'all' || i < 2; });
+    this.headSpotOn = base !== 'low';
+    this.rippleOn = !!P.ripple;
+    this.effects?.setRipple(P.ripple);
+    this.ui?.syncSettings();
+    this.save.save();
+  }
+  // compat: chamadas antigas usam applyQuality(nome)
+  applyQuality(q, first = false) {
+    if (['low', 'medium', 'high', 'ultra'].includes(q)) {
+      this.save.data.settings.base = q;
+      this.applyPreset(q);
+    } else this.applyAllSettings();
+    void first;
+  }
+  applyFog() {
+    const S = this.save.data.settings;
+    const base = (S.base && PRESETS[S.base]) ? S.base : 'medium';
+    const k = PRESETS[base].fog * ({ short: 0.7, normal: 1, long: 1.3 }[S.view] ?? 1);
+    this.weather.fogK = k;
+    if (this.scene.fog) {
+      if (this.weather.raining) { this.scene.fog.near = 35 * k; this.scene.fog.far = 130 * k; }
+      else { this.scene.fog.near = 55 * k; this.scene.fog.far = 190 * k; }
+    }
   }
 
   onLightChange(s) {
     if (s === 'green') this.traffic.onGreen(); // onda de arranque
     this.moodTarget.set(s === 'red' ? 0xa08ad0 : s === 'yellow' ? 0x8f86c4 : 0x7f8fd0);
+    // demanda da rua: cada fase vermelha paga diferente (decisão de onde vender)
+    if (s === 'red') this.demand = 0.9 + Math.random() * 0.25;
     if (this.state !== 'playing' && this.state !== 'paused') return;
-    if (s === 'red') { this.ui.banner('🔴 SEMÁFORO FECHADO — VENDAS LIBERADAS!', 'Aproxime-se dos carros parados e pressione E', 4); this.audio.beep(true); }
+    if (s === 'red') {
+      const pct = Math.round((this.demand - 1) * 100);
+      this.ui.banner('🔴 SEMÁFORO FECHADO — VENDAS LIBERADAS!',
+        `Aproxime-se dos carros parados e pressione E • movimento ${pct >= 0 ? '+' : ''}${pct}%`, 4);
+      this.audio.beep(true);
+    }
     else if (s === 'green') { this.ui.banner('🟢 SEMÁFORO ABERTO — SAIA DA RUA!', 'Carros em movimento. Volte para a calçada!', 4); this.selling.cancel(); }
     else this.ui.banner('🟡 ATENÇÃO...', '', 2);
   }
@@ -375,6 +464,7 @@ export class Game {
     }
   }
   updateHeadSpot() {
+    if (!this.headSpotOn && this.headSpotOn !== undefined) { this.headSpot.intensity = 0; return; }
     let best = null, bd = 20;
     for (const c of this.traffic.cars) {
       if (!c.active || c.v < 1) continue;
@@ -473,11 +563,19 @@ export class Game {
       if (this.fpsT > 4) {
         this.fpsT = 0;
         const order = ['low', 'medium', 'high', 'ultra'];
-        const qi = order.indexOf(this.save.data.settings.quality);
-        if (this.fpsEMA < 42 && qi > 0 && this.qCooldown <= 0) {
-          this.qCooldown = 12;
-          this.applyQuality(order[qi - 1]);
-          this.ui?.toast(`⚙️ Qualidade ajustada para <b>${order[qi - 1].toUpperCase()}</b> (performance).`, '');
+        const S = this.save.data.settings;
+        const cur = S.quality === 'custom' ? null : S.quality; // personalizado: não mexe sozinho
+        if (cur && cur !== 'ultra') {
+          const qi = order.indexOf(cur);
+          if (this.fpsEMA < 42 && qi > 0 && this.qCooldown <= 0) {
+            this.qCooldown = 12;
+            this.applyPreset(order[qi - 1]);
+            this.ui?.toast(`⚙️ Qualidade ajustada para <b>${order[qi - 1].toUpperCase()}</b> (performance).`, '');
+          }
+        } else if (cur === 'ultra' && this.fpsEMA < 28 && this.qCooldown <= 0) {
+          // ULTRA nunca é reduzido silenciosamente: só avisa
+          this.qCooldown = 30;
+          this.ui?.toast('⚠️ ULTRA pesado neste hardware. Considere ALTO nas Configurações.', 'gold');
         }
       }
     }
@@ -493,7 +591,7 @@ export class Game {
         this.traffic.update(dt, this.light, this.upgrades.luck);
         this.peds.update(dt, this.light.carsMayGo, t);
         this.weather.update(dt, 0);
-        this.effects.update(dt);
+        this.effects.update(dt, this.weather.raining);
       }
       this.hemi.color.lerp(this.moodTarget, Math.min(1, 2 * rawDt));
       this.renderer.render(this.scene, this.camera);
@@ -553,8 +651,14 @@ export class Game {
     }
     this.updateHeadSpot();
 
-    // 3) interação (E)
+    // 3) interação (E) + clientes que perderam a paciência
     if (this.input.consumeInteract()) this.onInteract();
+    for (const c of this.traffic.cars) {
+      if (c.patienceGone && !c.patienceToasted) {
+        c.patienceToasted = true;
+        this.ui.toast('⏱ Um cliente <b>apressado</b> foi embora...<br>Seja mais rápido na próxima!', 'bad');
+      }
+    }
     // cancelar venda se andar pra longe
     if (this.selling.active) {
       const c = this.selling.active.car;
@@ -589,12 +693,12 @@ export class Game {
     } else this.interactHint = null;
     this.updateTutorial(sellable);
 
-    // 5) efeitos + HUD + saves periódicos + bandeja acompanha equipado
+    // 5) bandeja, hint, efeitos, HUD, saves periódicos
     if (this.player.trayProduct !== d.equipped) this.player.setTray(d.equipped);
     // barra de controles: só no tutorial / primeiros 4 min
     const hint = document.getElementById('controls-hint');
     if (hint) hint.style.display = (!d.tutorialDone && d.stats.playTime < 240) ? '' : 'none';
-    this.effects.update(dt);
+    this.effects.update(dt, this.weather.raining);
     this.ui.updateHUD();
     this.saveT += dt; this.missionT += dt;
     if (this.missionT > 0.7) { this.missionT = 0; this.afterEconomyChangeLite(); }
@@ -605,7 +709,7 @@ export class Game {
     const prod = this.economy.equipped();
     let unit = prod.price * this.upgrades.priceMul * car.customer.priceMul;
     if (this.events.promo) unit *= 1.2;
-    // após a venda o combo será (combo atual + 1) => mult = 1 + comboAtual*0.15
+    unit *= this.demand;
     return Math.round(unit * (1 + this.prog.combo * 0.15));
   }
 
@@ -630,11 +734,12 @@ export class Game {
       else if (r.started) this.audio.ui();
     }
   }
-
   finishSale(car) {
-    if (!car) return;    const res = this.selling.resolve(car, {
+    if (!car) return;
+    const res = this.selling.resolve(car, {
       eco: this.economy, upgrades: this.upgrades, prog: this.prog,
       weather: this.weather, events: this.events, difficulty: this.difficulty,
+      demand: this.demand, lightState: this.light.state,
       onLevelUp: (lv) => {
         this.ui.toast(`⬆️ NÍVEL ${lv} — ${levelTitle(lv)}!<br>Carros mais rápidos, clientes mais exigentes... e mais lucro!`, 'gold');
         this.audio.bigSale();

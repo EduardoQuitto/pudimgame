@@ -103,6 +103,9 @@ select { background:#241f3d; color:#fff; border:1px solid #4c3a86; border-radius
 
 /* ===== ETAPA 2: transições, perigo, responsivo, acessibilidade ===== */
 .screen { animation:fadein .25s ease-out; }
+/* overlays de menu sempre ACIMA do menu principal (bug: ficavam escondidos atrás) */
+#menu { z-index:30; }
+#help, #settings, #credits, #summary { z-index:40; }
 @keyframes fadein { from { opacity:0; } }
 .panel { animation:pop .22s ease-out; }
 @keyframes pop { from { opacity:0; transform:scale(.96) translateY(8px); } }
@@ -213,3 +216,18 @@ body.cb #hud-light.red { border-color:#ea580c; color:#fb923c; box-shadow:0 0 18p
 /* painel: cabeçalho com regra, não só caixa */
 .panel-head { border-bottom:1px solid #ffffff14; padding-bottom:12px; }
 .panel-head h2 { font-family:"Arial Narrow", "Helvetica Neue", Arial, sans-serif; letter-spacing:1.5px; }
+
+/* configurações: duas colunas por seção */
+.set-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width: 640px) { .set-grid { grid-template-columns:1fr; } }
+.set-sec h3 { font-size:12px; letter-spacing:2px; color:#a89cc9; margin:12px 0 4px; }
+.set-sec h3:first-child { margin-top:0; }
+.set-sec label { margin:7px 0; font-size:14px; }
+.set-foot { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+.muted { color:#9a94b8; font-size:12px; }
+.credits-box { text-align:center; }
+.brand-badge.sm { width:64px; height:64px; }
+.credit-line { color:#a89cc9; font-size:14px; margin-top:10px; }
+.credit-name { font-size:22px; font-weight:900; letter-spacing:1px; color:#ffd98a; margin:4px 0 10px; }
+.cb-bar { height:4px; background:#00000088; border-radius:2px; margin-top:3px; overflow:hidden; }
+#hud-combo-t { height:100%; background:#fb923c; width:100%; }

@@ -1,12 +1,12 @@
 // Dados de jogo: produtos, upgrades, missões, níveis. Expansível: basta adicionar entradas.
 
 export const PRODUCTS = [
-  { id: 'pudim',     icon: '🍮', name: 'Pudim Roxo',        cost: 3,  price: 8,  chance: 0.72, unlock: 0,    desc: 'O roxinho famoso. Barato e vende bem.' },
-  { id: 'choco',     icon: '🍫', name: 'Pudim de Chocolate',cost: 5,  price: 12, chance: 0.66, unlock: 60,   desc: 'Mais margem, agrada os chocólatras.' },
-  { id: 'morango',   icon: '🍓', name: 'Pudim de Morango',  cost: 5,  price: 13, chance: 0.60, unlock: 140,  desc: 'Premium leve, boa gorjeta.' },
-  { id: 'geladinho', icon: '🧊', name: 'Geladinho',         cost: 2,  price: 6,  chance: 0.80, unlock: 260,  desc: 'Vende muito rápido, margem menor.' },
-  { id: 'agua',      icon: '🥤', name: 'Água Gelada',       cost: 1,  price: 5,  chance: 0.85, unlock: 420,  desc: 'Quase sempre vende. Ideal p/ combo.' },
-  { id: 'brigadeiro',icon: '🍬', name: 'Brigadeiro',        cost: 4,  price: 10, chance: 0.70, unlock: 650,  desc: 'Equilibrado e popular.' },
+  { id: 'pudim',     icon: '🍮', name: 'Pudim Roxo',        cost: 3,  price: 8,  chance: 0.72, unlock: 0,   time: 1.25, tipMul: 1,   pace: 'ritmo normal', desc: 'O roxinho famoso. Equilibrado em tudo.' },
+  { id: 'choco',     icon: '🍫', name: 'Pudim de Chocolate',cost: 5,  price: 12, chance: 0.66, unlock: 60,  time: 1.25, tipMul: 1,   pace: 'ritmo normal', desc: 'Mais margem, agrada os chocólatras.' },
+  { id: 'morango',   icon: '🍓', name: 'Pudim de Morango',  cost: 5,  price: 13, chance: 0.60, unlock: 140, time: 1.40, tipMul: 1.5, pace: 'ritmo lento',  desc: 'Premium: demora mais, rende gorjeta.' },
+  { id: 'geladinho', icon: '🧊', name: 'Geladinho',         cost: 2,  price: 6,  chance: 0.80, unlock: 260, time: 0.90, tipMul: 0.8, pace: 'venda rápida', desc: 'Vende rápido e fácil, margem menor.' },
+  { id: 'agua',      icon: '🥤', name: 'Água Gelada',       cost: 1,  price: 4,  chance: 0.85, unlock: 420, time: 0.80, tipMul: 0.6, pace: 'venda rápida', desc: 'Volume alto, lucro baixo. Ideal p/ combo.' },
+  { id: 'brigadeiro',icon: '🍬', name: 'Brigadeiro',        cost: 4,  price: 10, chance: 0.70, unlock: 650, time: 1.50, tipMul: 1.2, pace: 'ritmo lento',  desc: 'Margem boa, exige paciência.' },
 ];
 
 export const UPGRADE_CATS = [

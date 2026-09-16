@@ -17,6 +17,17 @@ export class Effects {
       this.pool.push({ pts: p, t: 0, dur: 0, vel: new Float32Array(40 * 3) });
     }
     this.v = new THREE.Vector3();
+    this.rippleAllowed = false;
+    // ondulações nas poças (ULTRA + chuva): anéis que expandem e somem
+    this.ripples = [];
+    const ripM = new THREE.MeshBasicMaterial({ color: 0x8fa8c8, transparent: true, opacity: 0.35, depthWrite: false });
+    const ripSpots = [[-18, -2], [-9, 3], [7, 1.5], [15, -1], [24, 2.6]];
+    ripSpots.forEach(([x, z], i) => {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.015, 6, 20), ripM.clone());
+      r.rotation.x = -Math.PI / 2; r.position.set(x, 0.02, z);
+      r.visible = false; scene.add(r);
+      this.ripples.push({ m: r, t: i * 0.5 });
+    });
     // notas voando do cliente até o jogador (pool de 3)
     const bcnv = document.createElement('canvas'); bcnv.width = 64; bcnv.height = 32;
     const bg = bcnv.getContext('2d');
@@ -69,7 +80,18 @@ export class Effects {
     this.floatLayer.appendChild(el);
     setTimeout(() => el.remove(), 1450);
   }
-  update(dt) {
+  setRipple(on) { this.rippleAllowed = on; if (!on) for (const r of this.ripples) r.m.visible = false; }
+  update(dt, raining = false) {
+    const showRip = this.rippleAllowed && raining && this.enabled;
+    for (const r of this.ripples) {
+      r.m.visible = showRip;
+      if (!showRip) continue;
+      r.t += dt;
+      if (r.t > 1.5) r.t = 0;
+      const k = r.t / 1.5;
+      r.m.scale.setScalar(0.4 + k * 1.6);
+      r.m.material.opacity = 0.35 * (1 - k);
+    }
     for (const b of this.bills) {
       if (b.t >= b.dur) { b.m.visible = false; continue; }
       if (b.delay > 0) { b.delay -= dt; continue; }

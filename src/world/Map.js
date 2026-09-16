@@ -47,10 +47,27 @@ export class MapWorld {
       new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false }));
     S.add(sky);
     S.fog = new THREE.Fog(0x2e2440, 55, 190);
-    // sol baixo + nuvens escuras à deriva (pôr-do-sol com vida)
     const sun = new THREE.Mesh(new THREE.CircleGeometry(9, 32),
       new THREE.MeshBasicMaterial({ color: 0xffb45e, fog: false }));
     sun.position.set(-150, 26, -60); sun.lookAt(0, 10, 0); S.add(sun);
+    // skyline distante: silhuetas que vendem cidade maior (barato, sem colisor)
+    const skylineTex = canvasTex(64, 128, (g, w, h) => {
+      g.fillStyle = '#101018'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 40; i++) {
+        if (Math.random() < 0.4) { g.fillStyle = Math.random() < 0.7 ? '#c9a45e' : '#7fa8c9'; g.fillRect(4 + Math.random() * (w - 10), 4 + Math.random() * (h - 10), 3, 4); }
+      }
+    });
+    const skyM = new THREE.MeshBasicMaterial({ map: skylineTex });
+    const darkM = new THREE.MeshBasicMaterial({ color: 0x14141c });
+    for (const sz of [-1, 1]) {
+      for (let i = 0; i < 9; i++) {
+        const w = 8 + Math.random() * 8, h = 10 + Math.random() * 18;
+        const x = -60 + i * 14 + Math.random() * 6;
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 6), i % 3 ? darkM : skyM);
+        b.position.set(x, h / 2 - 0.5, sz * (40 + Math.random() * 12));
+        S.add(b);
+      }
+    }
     const clCnv = document.createElement('canvas'); clCnv.width = 256; clCnv.height = 64;
     const cg = clCnv.getContext('2d');
     for (let i = 0; i < 26; i++) {
@@ -179,6 +196,17 @@ export class MapWorld {
         new THREE.MeshStandardMaterial({ color: 0x9a968e, roughness: 0.9 }));
       curb.position.set(0, 0.05, sz * 5.32); curb.receiveShadow = true; S.add(curb);
     }
+    // rampas de acessibilidade na faixa + piso tátil (detalhe urbano real)
+    const rampM = new THREE.MeshStandardMaterial({ color: 0x8f8b84, roughness: 0.95 });
+    const tactM = new THREE.MeshStandardMaterial({ color: 0xb89a3a, roughness: 0.9 });
+    for (const sz of [-1, 1]) {
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.12, 1.1), rampM);
+      ramp.position.set(0, 0.06, sz * 5.15); ramp.rotation.x = sz * 0.12;
+      ramp.receiveShadow = true; S.add(ramp);
+      const tact = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), tactM);
+      tact.rotation.x = -Math.PI / 2; tact.position.set(0, 0.19, sz * 5.9);
+      tact.receiveShadow = true; S.add(tact);
+    }
 
     // ---------- PRÉDIOS de fundo (fachadas claras + vitrines térreas acesas) ----------
     const names = ['PADARIA PÃO QUENTE', 'BAR DO ZÉ', 'PUDIM & CIA', 'LANCHES', 'FARMÁCIA', 'SORVETERIA', 'PIZZARIA', 'MERCADINHO'];
@@ -243,9 +271,8 @@ export class MapWorld {
     const lampMat = new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffb45e, emissiveIntensity: 2.2 });
     this.lampMat = lampMat;
     let li = 0;
-    for (let x = -30; x <= 30; x += 12) {
-      for (const sz of [-1, 1]) {
-        if ((x / 12 + (sz > 0 ? 1 : 0)) % 2 !== 0) continue;
+    // posições alternadas e irregulares (rua real, não simétrica)
+    for (const [x, sz] of [[-26, -1], [-14, 1], [-4, -1], [8, 1], [18, -1], [28, 1]]) {
         const g = new THREE.Group();
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 5.4, 8), poleMat);
         pole.position.y = 2.7; pole.castShadow = true; g.add(pole);
@@ -253,8 +280,8 @@ export class MapWorld {
         arm.rotation.z = Math.PI / 2; arm.position.set(0, 5.3, -sz * 0.6); g.add(arm);
         const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), lampMat);
         bulb.position.set(0, 5.2, -sz * 1.25); g.add(bulb);
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.2, 16, 1, true),
-          new THREE.MeshBasicMaterial({ color: 0xffc873, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false }));
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(1.3, 3.2, 16, 1, true),
+          new THREE.MeshBasicMaterial({ color: 0xffc873, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false }));
         cone.position.set(0, 3.6, -sz * 1.25); g.add(cone);
         g.position.set(x, 0, sz * 8.6); S.add(g);
         if (li < 4) {
@@ -264,7 +291,6 @@ export class MapWorld {
         }
         li++;
         this.addCollider(x, sz * 8.6, 0.4, 0.4, 5);
-      }
     }
 
     // ---------- fios entre postes ----------
@@ -274,6 +300,17 @@ export class MapWorld {
       for (let x = -30; x <= 30; x += 4) pts.push(new THREE.Vector3(x, 5.6 + Math.sin(x) * 0.15, sz * 8.6));
       S.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), wireMat));
     }
+    // travessias aéreas (catenárias) + transformador: rede elétrica de bairro
+    for (const wx of [-14, 2, 18]) {
+      const pts = [];
+      for (let k = 0; k <= 12; k++) {
+        const z = -8.6 + (k / 12) * 17.2;
+        pts.push(new THREE.Vector3(wx + Math.sin(k) * 0.1, 6.1 - Math.sin((k / 12) * Math.PI) * 0.9, z));
+      }
+      S.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), wireMat));
+    }
+    const transf = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.9, 10), poleMatFix);
+    transf.position.set(-18, 4.6, -8.6); S.add(transf);
 
     // ---------- árvores, lixeiras, bancos, cones, barreiras ----------
     const trunkM = new THREE.MeshStandardMaterial({ color: 0x5a3d26, roughness: 0.9 });
@@ -530,7 +567,7 @@ export class MapWorld {
       gg.fillStyle = '#3b2a1a'; gg.font = 'bold 30px Arial'; gg.textAlign = 'center';
       gg.fillText('CARDÁPIO', w / 2, 44);
       gg.font = '20px Arial'; gg.textAlign = 'left';
-      const items = ['🍮 Pudim Roxo R$8', '🍫 Choco R$12', '🍓 Morango R$13', '🧊 Geladinho R$6', '🥤 Água R$5', '🍬 Brigad. R$10'];
+      const items = ['🍮 Pudim Roxo R$8', '🍫 Choco R$12', '🍓 Morango R$13', '🧊 Geladinho R$6', '🥤 Água R$4', '🍬 Brigad. R$10'];
       items.forEach((t, i) => gg.fillText(t, 18, 90 + i * 36));
     });
     const menu = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9),
@@ -555,6 +592,22 @@ export class MapWorld {
       new THREE.Vector3(this.shopAnchor.x + 1.6, 2, this.shopAnchor.z + 0.9));
   }
   setShopTier(t) { if (t !== this.shopTier) this.buildShop(t); }
+  setLampLevel(n) {
+    this.lampLights.forEach((l, i) => { l.visible = i < n; });
+  }
+  setAniso(n) {
+    this.scene.traverse(o => {
+      if (o.isMesh) {
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        for (const m of mats) {
+          const maps = [m.map, m.emissiveMap].filter(Boolean);
+          for (const t of maps) {
+            if (t.anisotropy !== n) { t.anisotropy = n; t.needsUpdate = true; }
+          }
+        }
+      }
+    });
+  }
   setWet(wet) {
     // MOLHADO: mais escuro + cetim (responde à luz, mantém textura, sem plástico)
     // SECO: claro + áspero. A diferença é evidente sem virar espelho.

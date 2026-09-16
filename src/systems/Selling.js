@@ -15,8 +15,9 @@ export class Selling {
     const stock = eco.s.data.inv[eco.s.data.equipped] ?? 0;
     if (stock <= 0) return { err: 'Sem estoque! Volte à barraca (oeste) e pressione E.' };
     if (car.soldThisRed) return { err: 'Este cliente já comprou. Tente outro carro!' };
+    const prod = eco.equipped();
     const mul = car.customer.sellTimeMul ?? 1;
-    this.active = { car, t: 0, need: CONFIG.sell.time * mul, stage: 'offer' };
+    this.active = { car, t: 0, need: (prod.time ?? CONFIG.sell.time) * mul, stage: 'offer' };
     return { started: true };
   }
   update(dt) {
@@ -51,9 +52,15 @@ export class Selling {
     let chance = prod.chance + upgrades.chanceBonus + luck * 0.015 - diff * 0.03 - (cust.chanceMalus ?? 0);
     if (weather.raining) chance -= 0.05;
     chance = Math.max(0.12, Math.min(0.97, chance));
-    if (Math.random() > chance) {
-      prog.breakCombo();
-      return { ok: false, txt: '🙅 Recusou...', sub: `${cust.name || 'Motorista'} não quis. Combo perdido.`, xp: 0 };
+    const roll = Math.random();
+    // EXIGENTE pechinchando: perto de recusar, ele propõe pagar menos (venda garantida menor)
+    let bargain = false;
+    if (roll > chance) {
+      if (cust.id === 'exigente' && roll < chance + 0.14) bargain = true;
+      else {
+        prog.breakCombo();
+        return { ok: false, txt: '🙅 Recusou...', sub: `${cust.name || 'Motorista'} não quis. Combo perdido.`, xp: 0 };
+      }
     }
     // quantidade: famintos levam mais; sorte pode render unidade extra
     let qty = Math.min(cust.qty, d.inv[prod.id] ?? 0);
@@ -61,14 +68,19 @@ export class Selling {
     if (qty < (d.inv[prod.id] ?? 0) && Math.random() < 0.06 + luck * 0.015) qty += 1;
     if (!eco.consumeEquipped(qty)) return { ok: false, txt: 'Sem estoque!', sub: '', xp: 0 };
     let unit = prod.price * upgrades.priceMul * cust.priceMul;
+    if (bargain) unit *= 0.8; // aceitou a pechincha: -20%, mas vendeu
     if (events.promo) unit *= 1.2;
+    unit *= (ctx.demand ?? 1); // movimento da rua nesta fase
     const combo = prog.hitCombo();
     let total = Math.round(unit * qty * (1 + (combo - 1) * 0.15));
+    // ÚLTIMA CHAMADA: fechar venda no amarelo paga +25% (risco vs recompensa)
+    let yellowBonus = false;
+    if (ctx.lightState === 'yellow') { total = Math.round(total * 1.25); yellowBonus = true; }
     let tipCh = cust.tipCh + luck * 0.02;
     if (weather.raining) tipCh += 0.12;
     let tip = 0;
     if (Math.random() < tipCh) {
-      tip = Math.round(cust.tip * (weather.raining ? 1.5 : 1) + luck * 0.8);
+      tip = Math.round(cust.tip * (prod.tipMul ?? 1) * (weather.raining ? 1.5 : 1) + luck * 0.8);
       total += tip;
       d.stats.tips++;
     }
@@ -85,9 +97,9 @@ export class Selling {
     const xpGain = cust.xp + (tip ? 4 : 0) + (combo >= 3 ? 6 : 0);
     prog.addXP(xpGain, ctx.onLevelUp);
     return {
-      ok: true, total, tip, combo, special, qty, xp: xpGain,
+      ok: true, total, tip, combo, special, qty, xp: xpGain, bargain, yellowBonus,
       txt: `+R$ ${total}`,
-      sub: `${cust.name ? cust.name + ' • ' : ''}${qty}x ${prod.icon} ${prod.name}${tip ? ` • gorjeta +R$${tip}` : ''}${combo >= 2 ? ` • 🔥x${combo}` : ''}`,
+      sub: `${cust.name ? cust.name + ' • ' : ''}${qty}x ${prod.icon} ${prod.name}${bargain ? ' • pechincha -20%' : ''}${tip ? ` • gorjeta +R$${tip}` : ''}${yellowBonus ? ' • +25% AMARELO' : ''}${combo >= 2 ? ` • 🔥x${combo}` : ''}`,
     };
   }
 }

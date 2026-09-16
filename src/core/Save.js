@@ -13,7 +13,7 @@ export function defaultSave() {
     missions: {}, // id -> true (concluída)
     stats: { earned: 0, spent: 0, sales: 0, bestSale: 0, specials: 0, tips: 0, accidents: 0, bestCombo: 0, playTime: 0, favorite: 'pudim' },
     salesByProduct: { pudim: 0 },
-    settings: { quality: 'medium', sens: 1, shadows: true, sound: true, vol: 70, invertY: false, uiscale: 'normal', reduceFx: false, colorblind: false },
+    settings: { quality: 'medium', sens: 1, shadows: true, sound: true, vol: 70, invertY: false, uiscale: 'normal', reduceFx: false, colorblind: false, refl: true, view: 'normal', particles: 'normal', npc: 'all', rainq: 'full', suggested: false },
     tutorialDone: false, tutorialStep: 0,
   };
 }
