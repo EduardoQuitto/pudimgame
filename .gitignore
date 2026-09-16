@@ -1,0 +1,22 @@
+# Dependências
+node_modules/
+
+# Build (gerado por `npm run build`)
+dist/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Temporários locais
+*.tmp

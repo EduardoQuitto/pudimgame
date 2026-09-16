@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pudim Street Simulator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍮</text></svg>" />
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".28"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16.5" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor" font-family="Arial">R$</text></symbol>
+    <symbol id="i-tray" viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="9" ry="3.2" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="9" cy="10.5" rx="2.6" ry="2" fill="currentColor"/><ellipse cx="15" cy="10.5" rx="2.6" ry="2" fill="currentColor" opacity=".65"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" fill="currentColor"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2c1 4-4 6-4 11a4.5 4.5 0 009 0c0-2-1-3.5-2-5-.5 1.5-1.5 2-1.5 2C14 7 13 4 12 2zM9 20a3 3 0 006 0" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4.5" height="16" rx="1" fill="currentColor"/><rect x="13.5" y="4" width="4.5" height="16" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8a5 5 0 010 8M18.5 5.5a9 9 0 010 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5A3.5 3.5 0 1012 15.5 3.5 3.5 0 0012 8.5zM19 12a7 7 0 01-.1 1.2l2 1.5-2 3.4-2.3-1a7 7 0 01-2 1.2L14.2 20h-4l-.4-2.7a7 7 0 01-2-1.2l-2.3 1-2-3.4 2-1.5A7 7 0 015 12c0-.4 0-.8.1-1.2l-2-1.5 2-3.4 2.3 1a7 7 0 012-1.2L9.8 4h4l.4 2.7a7 7 0 012 1.2l2.3-1 2 3.4-2 1.5c.1.4.1.8.1 1.2z" fill="currentColor"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="17" text-anchor="middle" font-size="13" font-weight="900" fill="currentColor" font-family="Arial">?</text></symbol>
+    <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 3h11v18H5z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12.5" cy="12" r="1.4" fill="currentColor"/><path d="M16 12h5M19 9l3 3-3 3" stroke="currentColor" stroke-width="2" fill="none"/></symbol>
+    <symbol id="i-shop" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-9M21 20H3" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 5h4M8 7l1 13h6l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pudim" viewBox="0 0 48 48"><ellipse cx="24" cy="36" rx="16" ry="4" fill="#e8e2d4"/><path d="M14 34c0-8 4-14 10-14s10 6 10 14z" fill="#9b4fd9"/><ellipse cx="24" cy="21.5" rx="9" ry="3.4" fill="#4a1a7a"/><ellipse cx="24" cy="20" rx="9" ry="3" fill="#6a2aaa"/></symbol>
+  </defs>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- LOADING -->
+  <div id="loading" class="screen">
+    <div class="load-box">
+      <div class="load-logo">🍮</div>
+      <h1>PUDIM STREET SIMULATOR</h1>
+      <div class="load-bar"><div id="load-fill"></div></div>
+      <p id="load-text">Preparando a rua...</p>
+      <p id="load-tip" class="tip"></p>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="menu" class="screen hidden">
+    <div class="menu-bg"></div>
+    <div class="menu-box">
+      <svg class="brand-badge"><use href="#i-pudim"/></svg>
+      <h1 class="game-title">PUDIM STREET<br /><span>SIMULATOR</span></h1>
+      <p class="subtitle">O vendedor roxo mais famoso do bairro</p>
+      <div class="menu-buttons">
+        <button id="btn-play" class="btn primary big"><svg class="ic"><use href="#i-play"/></svg> JOGAR</button>
+        <button id="btn-continue" class="btn big hidden"><svg class="ic"><use href="#i-play"/></svg> CONTINUAR</button>
+        <button id="btn-help" class="btn"><svg class="ic"><use href="#i-help"/></svg> COMO JOGAR</button>
+        <button id="btn-settings" class="btn"><svg class="ic"><use href="#i-gear"/></svg> CONFIGURAÇÕES</button>
+        <button id="btn-credits" class="btn"><svg class="ic"><use href="#i-star"/></svg> CRÉDITOS</button>
+        <button id="btn-new" class="btn danger"><svg class="ic"><use href="#i-trash"/></svg> NOVO JOGO</button>
+      </div>
+      <p id="menu-save-info" class="save-info"></p>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-top-left">
+      <div id="hud-cash"><svg class="ic gold"><use href="#i-coin"/></svg><span id="hud-money">R$ 20</span></div>
+      <div id="hud-sub"><svg class="ic"><use href="#i-tray"/></svg><span id="hud-stock">4/8</span><span id="hud-product">Pudim Roxo</span></div>
+      <div id="hud-lvl"><span class="lvl-tag">NV <span id="hud-level">1</span></span><span id="hud-title">Iniciante</span>
+        <div class="xpbar"><div id="hud-xp"></div></div>
+      </div>
+      <div id="hud-combo" class="hidden"><svg class="ic fire"><use href="#i-flame"/></svg>x<span id="hud-combo-n">2</span></div>
+    </div>
+    <div id="hud-top-right">
+      <div id="hud-light" class="light green"><span class="dot"></span><span id="hud-light-txt">VERDE</span><span id="hud-light-t">20</span></div>
+      <button id="btn-mute" class="icon-btn" title="Mudo (M)"><svg class="ic"><use href="#i-sound"/></svg></button>
+      <button id="btn-pause" class="icon-btn" title="Pausar (Esc)"><svg class="ic"><use href="#i-pause"/></svg></button>
+    </div>
+    <div id="hud-mission"><svg class="ic"><use href="#i-target"/></svg><span id="hud-mission-txt">Venda 5 pudins</span><b id="hud-mission-n">0/5</b></div>
+    <div id="interact" class="hidden">
+      <div id="interact-txt">PRESSIONE <b>E</b> PARA VENDER</div>
+      <div id="interact-sub"></div>
+      <div id="sell-progress" class="hidden"><div id="sell-fill"></div></div>
+    </div>
+    <div id="tutorial" class="hidden">👉 <span id="tutorial-txt"></span></div>
+    <div id="event-banner" class="hidden"></div>
+    <div id="danger" class="hidden">⚠️ CUIDADO! CARROS EM MOVIMENTO ⚠️</div>
+    <div id="crosshair">•</div>
+    <div id="controls-hint">WASD mover • Shift correr • Mouse câmera • <b>E</b> interagir • Esc pausa</div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="floats"></div>
+  <div id="danger-vignette"></div>
+  <div id="redflash"></div>
+
+  <!-- SHOP / BUSINESS -->
+  <div id="shop" class="screen hidden">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>🏪 CENTRAL DO NEGÓCIO</h2>
+        <div class="panel-money">💰 <span id="shop-money">R$ 0</span></div>
+        <button id="shop-close" class="icon-btn">✖</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="stock">📦 Estoque</button>
+        <button class="tab" data-tab="products">🍮 Produtos</button>
+        <button class="tab" data-tab="upgrades">⬆️ Melhorias</button>
+        <button class="tab" data-tab="missions">🎯 Missões</button>
+        <button class="tab" data-tab="stats">📊 Stats</button>
+      </div>
+      <div id="tab-stock" class="tab-body"></div>
+      <div id="tab-products" class="tab-body hidden"></div>
+      <div id="tab-upgrades" class="tab-body hidden"></div>
+      <div id="tab-missions" class="tab-body hidden"></div>
+      <div id="tab-stats" class="tab-body hidden"></div>
+    </div>
+  </div>
+
+  <!-- PAUSE -->
+  <div id="pause" class="screen hidden">
+    <div class="panel small">
+      <h2>PAUSADO</h2>
+      <div class="menu-buttons">
+        <button id="btn-resume" class="btn primary"><svg class="ic"><use href="#i-play"/></svg> CONTINUAR</button>
+        <button id="btn-shop2" class="btn"><svg class="ic"><use href="#i-shop"/></svg> CENTRAL DO NEGÓCIO</button>
+        <button id="btn-help2" class="btn"><svg class="ic"><use href="#i-help"/></svg> COMO JOGAR</button>
+        <button id="btn-settings2" class="btn"><svg class="ic"><use href="#i-gear"/></svg> CONFIGURAÇÕES</button>
+        <button id="btn-quit" class="btn"><svg class="ic"><use href="#i-door"/></svg> MENU PRINCIPAL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP -->
+  <div id="help" class="screen hidden">
+    <div class="panel small">
+      <h2>🎮 COMO JOGAR</h2>
+      <div class="help-body">
+        <p><b>O loop:</b> compre estoque na barraca → espere o semáforo fechar → atravesse → venda nos carros parados (E) → volte → invista.</p>
+        <p><b>WASD</b> mover • <b>Shift</b> correr • <b>Mouse</b> câmera (clique p/ travar) • <b>Scroll</b> zoom • <b>E</b> interagir/vender/loja • <b>Esc</b> pausa • <b>M</b> mudo</p>
+        <p>🟢 carros andando = <b>PERIGO</b>. 🔴 carros parados = <b>VENDA</b>.</p>
+        <p>Ser atropelado faz você perder dinheiro, estoque e combo (2s de proteção depois).</p>
+        <p>Vendas em sequência criam <b>COMBO 🔥</b> que aumenta o pagamento. Falhar ou demorar quebra o combo.</p>
+        <p>Clientes especiais (rico, faminto, generoso, VIP...) pagam muito mais. Sorte 🍀 aumenta a chance.</p>
+        <p>🌧 Na chuva, menos vendas mas gorjetas maiores.</p>
+      </div>
+      <button class="btn primary btn-close-help">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="screen hidden">
+    <div class="panel small">
+      <h2>⚙️ CONFIGURAÇÕES</h2>
+      <label>Qualidade gráfica
+        <select id="set-quality">
+          <option value="low">BAIXO</option>
+          <option value="medium" selected>MÉDIO</option>
+          <option value="high">ALTO</option>
+          <option value="ultra">ULTRA</option>
+        </select>
+      </label>
+      <label>Sensibilidade do mouse <input id="set-sens" type="range" min="0.3" max="3" step="0.1" value="1" /></label>
+      <label><input id="set-invert" type="checkbox" /> Inverter eixo Y da câmera</label>
+      <label>Tamanho da interface
+        <select id="set-uiscale">
+          <option value="compact">COMPACTA</option>
+          <option value="normal" selected>NORMAL</option>
+          <option value="large">GRANDE</option>
+        </select>
+      </label>
+      <label><input id="set-fx" type="checkbox" checked /> Efeitos e partículas</label>
+      <label><input id="set-cb" type="checkbox" /> Modo daltônico (sem depender de vermelho/verde)</label>
+      <label><input id="set-shadows" type="checkbox" checked /> Sombras</label>
+      <label><input id="set-sound" type="checkbox" checked /> Som</label>
+      <label>Volume <input id="set-vol" type="range" min="0" max="100" value="70" /></label>
+      <button id="btn-settings-close" class="btn primary">VOLTAR</button>
+    </div>
+  </div>
+
+  <!-- CREDITS -->
+  <div id="credits" class="screen hidden">
+    <div class="panel small">
+      <h2>⭐ CRÉDITOS</h2>
+      <p><b>PUDIM STREET SIMULATOR</b> — um jogo 3D de navegador.</p>
+      <p>Engine: Three.js (WebGL) • Áudio 100% sintetizado via WebAudio • Sem assets externos.</p>
+      <p>Design, código, arte procedural e direção: o vendedor roxo. 🍮💜</p>
+      <button class="btn primary btn-close-help">VOLTAR</button>
+    </div>
+  </div>
+
+  <!-- SESSION SUMMARY -->
+  <div id="summary" class="screen hidden">
+    <div class="panel small">
+      <h2>📋 RESUMO DA SESSÃO</h2>
+      <div class="row"><div class="grow">💰 Dinheiro ganho: <b id="sum-earned">R$0</b></div></div>
+      <div class="row"><div class="grow">🍮 Vendas: <b id="sum-sales">0</b> • ✨ Especiais: <b id="sum-specials">0</b></div></div>
+      <div class="row"><div class="grow">🔥 Melhor combo: <b id="sum-combo">x0</b> • 💵 Em caixa: <b id="sum-money">R$0</b></div></div>
+      <button id="btn-sum-close" class="btn primary" style="margin-top:12px;width:100%">VOLTAR AO MENU</button>
+    </div>
+  </div>
+
+  <!-- DEBUG -->
+  <div id="debug" class="hidden">
+    <b>DEBUG</b>
+    <button data-dbg="money">+R$100</button>
+    <button data-dbg="light">Trocar semáforo</button>
+    <button data-dbg="vip">Forçar VIP</button>
+    <button data-dbg="rain">Chuva</button>
+    <button data-dbg="nocolide">Sem colisão</button>
+    <button data-dbg="level">+Nível</button>
+    <button data-dbg="stock">Estoque full</button>
+  </div>
+
+  <div id="errbox" class="hidden"></div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
