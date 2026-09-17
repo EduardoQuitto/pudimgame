@@ -201,7 +201,6 @@ economia aprovada sem rebalance.
 Loop completo confirmado em screenshot: oferta → ✓ no carro → toast → HUD → tutorial avança.
 
 ## Etapa 5 — reconstrução da direção de arte (geometria, não efeitos)
-
 Créditos atualizados: **Encomendado por Lucas Rocha**.
 - **Humanos**: membros cônicos com juntas (joelho/cotovelo), panturrilha, deltoides,
   trapézio, colarinho com botões, punhos/barras, calçados com solado + cadarço, cinto com
@@ -215,3 +214,16 @@ Créditos atualizados: **Encomendado por Lucas Rocha**.
   rampas, fios de catenária, skyline de fundo.
 - **Luz/UI**: removido AmbientLight chapado; abas da loja sem emoji; foco visível p/ teclado.
 Tudo verificado em 4 screenshots dirigidas (corpo, semáforo, barraca, rua).
+
+## Remodelagem do protagonista (crânio esculpido + run cycle)
+
+Modelo anterior descartado por inadequação estrutural; `Humanoid` v2:
+- Crânio com deslocamento de vértices (mandíbula, maçãs, arco superciliar, nuca),
+  olhos menores com pálpebras, lábios com volume (cavidade + V superior + inferior),
+  nariz em 3 partes, orelhas com hélice, membros com massa (deltóide, bíceps,
+  quadríceps, panturrilha), mãos com nós/falanges/polegar em 2 partes,
+  calçados com solado/cadarço, colarinho com botões, trapézio.
+- Vendedor: franja irregular sob o boné, boné reassentado, avental extrudado com
+  amarração, cinto com fivela; run cycle próprio (passada longa, braços em L,
+  tronco inclinado) + entrega na venda (braço estendido, tronco, aceno).
+Validado em frente/lado/costas/3-4/corrida/venda por screenshot; mesma API e rig.

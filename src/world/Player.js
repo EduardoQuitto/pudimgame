@@ -2,7 +2,7 @@
 // rosto com íris/pupila/nariz/orelhas, dedos, avental em camadas, walk com peso.
 import * as THREE from 'three';
 import { CONFIG } from '../core/Config.js';
-import { buildHumanoid, poseWalk, poseIdle, clothMat } from './Humanoid.js';
+import { buildHumanoid, poseWalk, poseRun, poseIdle, clothMat } from './Humanoid.js';
 import { buildProductMesh } from './Products3D.js';
 
 const PURPLE = 0x8b3fd9;
@@ -34,12 +34,19 @@ export class Player {
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), capM);
     cap.scale.y = 0.62; cap.position.set(0, 0.16, -0.02); cap.castShadow = true; P.head.add(cap);
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, 0.035, 14, 1, false, -Math.PI / 2, Math.PI), capM);
-    brim.position.set(0, 0.165, 0.08); P.head.add(brim);
+    brim.position.set(0, 0.17, 0.08); brim.rotation.x = 0.12; P.head.add(brim);
     const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.03, 10),
       new THREE.MeshStandardMaterial({ color: PURPLE, roughness: 0.3, emissive: PURPLE, emissiveIntensity: 0.25 }));
-    pin.position.set(0, 0.245, 0.175); pin.rotation.x = 0.6; P.head.add(pin);
-    // cabelo: franja nas têmporas + nuca (nada de careca sob o boné)
+    pin.position.set(0, 0.27, 0.15); pin.rotation.x = 0.6; P.head.add(pin);
+    // cabelo: franja sob a aba + costeletas + nuca (irregular de propósito)
     const hairM = new THREE.MeshStandardMaterial({ color: 0x1c1210, roughness: 0.95 });
+    for (let f = 0; f < 5; f++) {
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.10, 0.05), hairM);
+      fr.position.set(-0.11 + f * 0.055, 0.125, 0.175);
+      fr.rotation.set(0.15, 0, (f - 2) * 0.10);
+      fr.rotation.y = (f - 2) * -0.12;
+      P.head.add(fr);
+    }
     for (const sx of [-1, 1]) {
       const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.08), hairM);
       tuft.position.set(sx * 0.20, 0.02, 0.06); tuft.rotation.z = sx * -0.15; P.head.add(tuft);
@@ -187,24 +194,31 @@ export class Player {
     const blink = this.blinkT < 0.12 ? 0.1 : 1;
     for (const e of P.eyes) e.scale.y = 0.85 * blink;
     if (sellingPose) {
-      // oferece com a direita estendida; esquerda segura a bandeja erguida
-      P.armR.rotation.x += (-1.25 - P.armR.rotation.x) * Math.min(1, 10 * dt);
-      P.armREl.rotation.x += (-0.25 - P.armREl.rotation.x) * Math.min(1, 10 * dt);
-      P.armL.rotation.x += (-0.55 - P.armL.rotation.x) * Math.min(1, 10 * dt);
-      P.armLEl.rotation.x += (-0.85 - P.armLEl.rotation.x) * Math.min(1, 10 * dt);
-      P.head.rotation.x = -0.08;
+      // ENTREGA: direita estende o produto, tronco gira, cabeça confirma com aceno
+      const w = Math.min(1, 10 * dt);
+      P.armR.rotation.x += (-1.25 - P.armR.rotation.x) * w;
+      P.armREl.rotation.x += (-0.20 - P.armREl.rotation.x) * w;
+      P.armL.rotation.x += (-0.55 - P.armL.rotation.x) * w;
+      P.armLEl.rotation.x += (-0.85 - P.armLEl.rotation.x) * w;
+      P.torso.rotation.y += (0.18 - P.torso.rotation.y) * w;
+      P.head.rotation.x = -0.05 + Math.sin(this.stepAcc * 6) * 0.05; // aceno curto
+      P.head.rotation.y *= 0.9;
       this.levelTray();
       return;
     }
+    P.torso.rotation.y *= 0.85;
     if (k < 0.05) {
       poseIdle(P, this.stepAcc * 0.25 + 10, 1);
       P.armL.rotation.x = -0.45; P.armLEl.rotation.x = -0.75; // bandeja em repouso
-    } else {
-      poseWalk(P, this.walkPhase, k, this.stepAcc);
+    } else if (k < 0.62) {
+      poseWalk(P, this.walkPhase, k / 0.62, this.stepAcc);
       // braço da bandeja balança menos e mantém a carga
       P.armL.rotation.x *= 0.25;
       P.armL.rotation.x += -0.40 * (1 - 0.25);
       P.armLEl.rotation.x = -0.7;
+    } else {
+      poseRun(P, this.walkPhase * 1.15, Math.min(1, (k - 0.62) / 0.38));
+      P.armL.rotation.x = -0.55; P.armLEl.rotation.x = -0.9; // protege a bandeja correndo
     }
     this.levelTray();
     // lean sutil
