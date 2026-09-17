@@ -73,13 +73,13 @@ function addClothing(P, kind, color) {
     }
     const zip = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.44, 0.02),
       new THREE.MeshStandardMaterial({ color: 0x8a8f96, metalness: 0.7, roughness: 0.35 }));
-    zip.position.set(0, 0.28, 0.215); g.add(zip);
+    zip.position.set(0, 0.28, 0.16); g.add(zip);
   } else if (kind === 2) { // moletom: capuz atrás + bolso canguru
     const hood = new THREE.Mesh(new THREE.TorusGeometry(0.10, 0.045, 8, 12, Math.PI * 1.4), m);
     hood.position.set(0, 0.52, -0.15); hood.rotation.set(0.4, 0, Math.PI * 0.8);
     g.add(hood);
     const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.05), m);
-    pocket.position.set(0, 0.08, 0.20); g.add(pocket);
+    pocket.position.set(0, 0.08, 0.165); g.add(pocket);
   } else if (kind === 3) { // vestido: saia rodada sobre o quadril
     const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.30, 0.42, 12), m);
     skirt.position.set(0, -0.05, 0); skirt.castShadow = true; g.add(skirt);

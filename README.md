@@ -227,6 +227,17 @@ Modelo anterior descartado por inadequação estrutural; `Humanoid` v2:
   tronco inclinado) + entrega na venda (braço estendido, tronco, aceno).
 Validado em frente/lado/costas/3-4/corrida/venda por screenshot; mesma API e rig.
 
+## Emergência de arte — base humana refeita (lathe + proporções)
+
+Diagnóstico: esferas/cilindros nunca leriam como corpo contínuo. Correção estrutural:
+- **Tronco em lathe** (superfície única quadril→cintura→peito→ombro; cápsula virou núcleo
+  interno), camisa como casca anatômica, colarinho/botões reassentados na superfície.
+- **Cabeça 0.82** (~5.5 proporções, sem infantilização), **pescoço visível** com trapézio,
+  olhos castanhos (hierarquia: pele roxa ≠ olho roxo), avental **extrudado trapezoidal**
+  com bainha (não mais placa retangular).
+- Teste de silhueta cinza aprovado: pessoa contínua, sem tubo.
+Pedestres e motoristas herdaram tudo (mesma base, mesmo rig); animações reconectadas.
+
 ## Pedestres v2 (sistema modular de verdade)
 
 - Ganchos no Humanoid: `headSize`, `bodyWidth`, `bareShins` (shorts com canela, barra e meia),

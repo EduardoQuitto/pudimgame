@@ -226,14 +226,19 @@ export function buildHumanoid(o = {}) {
   const belly = mesh(new THREE.CapsuleGeometry(0.17, 0.30, 4, 12), skinM, 0, 0.28, 0);
   P.torso.add(belly);
   const chest = mesh(new THREE.CapsuleGeometry(0.20, 0.26, 4, 12), shirtM, 0, 0.30, 0);
-  chest.scale.set(1.06 * bodyWidth, 1, 1.02); P.torso.add(chest);
-  P.chestMesh = chest;
-  const collar = mesh(new THREE.TorusGeometry(0.095, 0.022, 8, 14, Math.PI * 1.5),
-    shirtM, 0, 0.52, 0.01, false);
+  chest.scale.set(1.06 * bodyWidth, 1, 1.02); chest.visible = false; P.torso.add(chest); // núcleo (escondido)
+  // CAMISA EM LATHE: uma superfície contínua quadril→cintura→peito→ombro (nada de cápsula)
+  const profile = [[0.150, 0.0], [0.152, 0.08], [0.142, 0.20], [0.152, 0.32], [0.176, 0.44], [0.186, 0.52], [0.150, 0.60], [0.082, 0.645]]
+    .map(([r, y]) => new THREE.Vector2(r * bodyWidth, y));
+  const shirtLathe = mesh(new THREE.LatheGeometry(profile, 14), shirtM, 0, 0, 0);
+  P.torso.add(shirtLathe);
+  P.chestMesh = shirtLathe;
+  const collar = mesh(new THREE.TorusGeometry(0.088, 0.022, 8, 14, Math.PI * 1.5),
+    shirtM, 0, 0.60, 0.01, false);
   collar.rotation.z = Math.PI * 0.75; collar.rotation.x = -0.15; P.torso.add(collar);
   const btnM = new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.4 });
   for (let bi = 0; bi < 3; bi++) {
-    P.torso.add(mesh(new THREE.SphereGeometry(0.014, 6, 6), btnM, 0, 0.38 - bi * 0.09, 0.205, false));
+    P.torso.add(mesh(new THREE.SphereGeometry(0.014, 6, 6), btnM, 0, 0.42 - bi * 0.09, 0.16, false));
   }
   // ---- ombros com deltóides + braços cônicos + cotovelo + punho ----
   P.shoulders = new THREE.Group(); P.shoulders.position.set(0, D.shoulderY, 0); g.add(P.shoulders);
@@ -262,10 +267,13 @@ export function buildHumanoid(o = {}) {
     hand.position.set(0, -D.forearm, 0); el.add(hand);
     P[key] = sh; P[key + 'El'] = el; P[key + 'Hand'] = hand;
   }
-  // ---- pescoço com trapézio + cabeça ----
+  // ---- pescoço VISÍVEL com trapézio + cabeça proporcionalmente menor ----
   P.neck = new THREE.Group(); P.neck.position.set(0, D.shoulderY + 0.06, 0); g.add(P.neck);
-  P.neck.add(mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.14, 10), skinM, 0, 0.03, 0));
-  P.head = new THREE.Group(); P.head.position.set(0, 0.12, 0); P.neck.add(P.head);
+  P.neck.add(mesh(new THREE.CylinderGeometry(0.070, 0.088, 0.20, 10), skinM, 0, 0.06, 0));
+  const trapNeck = mesh(new THREE.CylinderGeometry(0.075, 0.17, 0.16, 8), shirtM, 0, -0.03, -0.01);
+  P.neck.add(trapNeck); // trapézio: cabeça encontra o torso sem degrau
+  P.head = new THREE.Group(); P.head.position.set(0, 0.17, 0); P.neck.add(P.head);
+  P.head.scale.set(0.82, 0.86, 0.82); // ~5.5 cabeças: estilizado, não infantil
   if (headSize) P.head.scale.set(headSize[0], headSize[1], headSize[2]);
   const face = buildFace(P.head, skinM, {
     iris: o.iris, detail, brow: o.brow, lip: o.lip, asym: o.asym ?? Math.random() * 0.8 + 0.2,
@@ -292,7 +300,7 @@ export function poseWalk(P, phase, amp, t) {
   P.shoulders.rotation.z = Math.sin(phase) * 0.028 * amp;
   P.shoulders.rotation.y = Math.sin(phase) * 0.05 * amp;
   P.head.rotation.x = Math.cos(phase * 2) * 0.012 * amp;
-  P.head.position.y = 0.12 - Math.abs(Math.cos(phase)) * 0.012 * amp;
+  P.head.position.y = 0.17 - Math.abs(Math.cos(phase)) * 0.012 * amp;
   return { bob: Math.abs(Math.cos(phase)) * 0.035 * amp };
 }
 
@@ -315,7 +323,7 @@ export function poseRun(P, phase, amp) {
   P.shoulders.rotation.y = Math.sin(phase) * 0.09 * amp;
   P.torso.rotation.x = 0.10 * amp; // tronco inclinado à frente
   P.head.rotation.x = -0.06 * amp; // olhar estabilizado
-  P.head.position.y = 0.12 - Math.abs(Math.cos(phase)) * 0.016 * amp;
+  P.head.position.y = 0.17 - Math.abs(Math.cos(phase)) * 0.016 * amp;
 }
 
 export function poseIdle(P, t, breathe = 1) {
@@ -329,6 +337,6 @@ export function poseIdle(P, t, breathe = 1) {
   P.hips.position.x = 0;
   P.shoulders.rotation.z = 0; P.shoulders.rotation.y = 0;
   P.torso.rotation.x = 0;
-  if (P.chestMesh) { const s = 1 + b; P.chestMesh.scale.set(1.06 * s, 1, 1.02 * s); }
+  if (P.chestMesh) { const s = 1 + b; P.chestMesh.scale.set(s, 1, s); }
   P.head.rotation.x = Math.sin(t * 0.6) * 0.015;
 }

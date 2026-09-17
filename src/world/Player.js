@@ -25,7 +25,7 @@ export class Player {
   build() {
     const { group, parts } = buildHumanoid({
       skin: PURPLE, shirt: 0xf5ecd7, pants: 0x33363d, shoes: 0x26262c,
-      detail: true, iris: 0x2a1245, asym: 0.7,
+      detail: true, iris: 0x4a2c14, asym: 0.7, // olhos castanhos: contraste com a pele roxa
     });
     this.group = group; this.P = parts;
     const P = parts;
@@ -55,24 +55,28 @@ export class Player {
     nape.position.set(0, -0.02, -0.20); P.head.add(nape);
     // cinto com fivela (separação camisa/calça)
     const beltM = new THREE.MeshStandardMaterial({ color: 0x2a1c12, roughness: 0.6 });
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.20, 0.07, 12), beltM);
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.160, 0.07, 12), beltM);
     belt.position.set(0, 0.02, 0); P.torso.add(belt);
     const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02),
       new THREE.MeshStandardMaterial({ color: 0xb8a43a, metalness: 0.8, roughness: 0.3 }));
-    buckle.position.set(0, 0.02, 0.20); P.torso.add(buckle);
-    // ---- avental de couro em camadas + bolso de dinheiro ----
+    buckle.position.set(0, 0.02, 0.165); P.torso.add(buckle);
+    // ---- avental EXTRUDADO: trapézio (busto estreito, saia larga), com volume ----
     const apronM = clothMat(0x6b4a2f, 0.8);
-    const ap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.06), apronM);
-    ap.position.set(0, 0.22, 0.20); ap.castShadow = true; P.torso.add(ap);
-    const apTop = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.16, 0.05), apronM);
-    apTop.position.set(0, 0.48, 0.17); P.torso.add(apTop);
+    const apShape = new THREE.Shape();
+    apShape.moveTo(-0.13, 0.25); apShape.lineTo(0.13, 0.25);
+    apShape.lineTo(0.19, -0.25); apShape.lineTo(-0.19, -0.25); apShape.closePath();
+    const ap = new THREE.Mesh(new THREE.ExtrudeGeometry(apShape, { depth: 0.03, bevelEnabled: false }), apronM);
+    ap.position.set(0, 0.22, 0.155); ap.rotation.x = -0.05; ap.castShadow = true; P.torso.add(ap);
+    const apHem = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.04, 0.035),
+      new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.85 }));
+    apHem.position.set(0, -0.03, 0.165); P.torso.add(apHem); // bainha da saia
     for (const sx of [-1, 1]) {
       const strap = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.30, 0.025), apronM);
-      strap.position.set(sx * 0.11, 0.55, 0.13); strap.rotation.x = -0.15; P.torso.add(strap);
+      strap.position.set(sx * 0.11, 0.55, 0.175); strap.rotation.x = -0.12; P.torso.add(strap);
     }
     const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.05),
       new THREE.MeshStandardMaterial({ color: 0x3fa34d, roughness: 0.7 }));
-    pocket.position.set(0.02, 0.10, 0.24); P.torso.add(pocket);
+    pocket.position.set(0.02, 0.10, 0.20); P.torso.add(pocket);
     // ---- bandeja articulada na mão esquerda (compensa o balanço, fica nivelada) ----
     const trayPivot = new THREE.Group();
     trayPivot.position.set(0, -0.02, 0.02);
