@@ -216,7 +216,6 @@ Créditos atualizados: **Encomendado por Lucas Rocha**.
 Tudo verificado em 4 screenshots dirigidas (corpo, semáforo, barraca, rua).
 
 ## Remodelagem do protagonista (crânio esculpido + run cycle)
-
 Modelo anterior descartado por inadequação estrutural; `Humanoid` v2:
 - Crânio com deslocamento de vértices (mandíbula, maçãs, arco superciliar, nuca),
   olhos menores com pálpebras, lábios com volume (cavidade + V superior + inferior),
@@ -227,3 +226,13 @@ Modelo anterior descartado por inadequação estrutural; `Humanoid` v2:
   amarração, cinto com fivela; run cycle próprio (passada longa, braços em L,
   tronco inclinado) + entrega na venda (braço estendido, tronco, aceno).
 Validado em frente/lado/costas/3-4/corrida/venda por screenshot; mesma API e rig.
+
+## Pedestres v2 (sistema modular de verdade)
+
+- Ganchos no Humanoid: `headSize`, `bodyWidth`, `bareShins` (shorts com canela, barra e meia),
+  olhos low-detail embutidos com esclera.
+- Roupas como geometria: jaqueta aberta (painéis + lapelas + zíper metálico), moletom
+  (capuz + bolso canguru), vestido com cinto; 8 cabelos com franja (coque, gorro, longo,
+  repartido, cacheado, rabo, curto, careca); acessórios (óculos, bolsa transversal, boné).
+- Corpo: altura/largura/crânio/postura/passo sorteados; giro de corpo com easing (sem snap);
+  LOD mantém; validados andando, esperando e atravessando por screenshot.

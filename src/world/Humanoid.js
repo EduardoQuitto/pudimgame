@@ -109,8 +109,12 @@ function buildFace(g, skin, opts = {}) {
         new THREE.MeshBasicMaterial({ color: 0xffffff }), ex + 0.010, ey + 0.012, ez + 0.035, false);
       g.add(gl);
     } else {
-      const pu = mesh(new THREE.SphereGeometry(0.015, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.35 }), ex, ey - 0.002, ez + 0.024, false);
+      // low-detail: esclera menor e embutida + pupila (nada de bola saltada)
+      const white = mesh(new THREE.SphereGeometry(0.030, 10, 8),
+        new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.3 }), ex, ey - 0.002, ez - 0.004, false);
+      white.scale.set(1, 0.8, 0.5); g.add(white); eyes.push(white);
+      const pu = mesh(new THREE.SphereGeometry(0.014, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.35 }), ex, ey - 0.002, ez + 0.020, false);
       pu.scale.set(1, 1, 0.4); g.add(pu);
     }
   }
@@ -169,6 +173,9 @@ export function buildHumanoid(o = {}) {
   const {
     skin = SKINS[0], shirt = 0x4a6b8a, pants = 0x2e3138, shoes = 0x222226,
     detail = false, shirtLong = true,
+    headSize = null,      // [sx, sy, sz] variedade de crânio (peds)
+    bodyWidth = 1,        // largura do tronco/quadril
+    bareShins = false,    // shorts: canela à mostra + meia
   } = o;
   const skinM = skinMat(skin), shirtM = clothMat(shirt), pantsM = clothMat(pants),
     shoeM = new THREE.MeshStandardMaterial({ color: shoes, roughness: 0.55 });
@@ -176,16 +183,30 @@ export function buildHumanoid(o = {}) {
   const P = {};
   // ---- pernas: coxa com quadríceps + joelho + panturrilha + tornozelo ----
   for (const [key, sx] of [['legL', -1], ['legR', 1]]) {
-    const hip = new THREE.Group(); hip.position.set(sx * 0.115, D.hipY, 0); g.add(hip);
-    const thigh = mesh(new THREE.CylinderGeometry(0.105, 0.070, D.thigh, 10), pantsM, 0, -D.thigh / 2, 0);
+    const hip = new THREE.Group(); hip.position.set(sx * 0.115 * bodyWidth, D.hipY, 0); g.add(hip);
+    const thighLen = bareShins ? D.thigh * 0.55 : D.thigh;
+    const thigh = mesh(new THREE.CylinderGeometry(0.105, 0.070, thighLen, 10), pantsM, 0, -thighLen / 2, 0);
     hip.add(thigh);
     const quad = mesh(new THREE.SphereGeometry(0.095, 10, 8), pantsM, 0, -0.13, 0.045);
-    quad.scale.set(0.95, 1.25, 0.8); hip.add(quad); // volume frontal da coxa
+    quad.scale.set(0.95, bareShins ? 0.8 : 1.25, 0.8); hip.add(quad);
+    if (bareShins) {
+      // shorts: coxa nua entre o tecido e o joelho + barra + meia branca
+      const bareLen = D.thigh - thighLen;
+      const bare = mesh(new THREE.CylinderGeometry(0.068, 0.060, bareLen, 8), skinM, 0, -thighLen - bareLen / 2, 0);
+      hip.add(bare);
+      const hem = mesh(new THREE.CylinderGeometry(0.108, 0.112, 0.07, 10), pantsM, 0, -thighLen + 0.02, 0);
+      hip.add(hem);
+    }
     const knee = new THREE.Group(); knee.position.set(0, -D.thigh, 0); hip.add(knee);
-    knee.add(mesh(new THREE.SphereGeometry(0.068, 10, 8), pantsM, 0, 0, 0.008));
-    const shin = mesh(new THREE.CylinderGeometry(0.068, 0.048, D.shin, 10), pantsM, 0, -D.shin / 2, 0);
+    knee.add(mesh(new THREE.SphereGeometry(0.068, 10, 8), bareShins ? skinM : pantsM, 0, 0, 0.008));
+    const shin = mesh(new THREE.CylinderGeometry(0.068, 0.048, D.shin, 10), bareShins ? skinM : pantsM, 0, -D.shin / 2, 0);
     knee.add(shin);
-    const calf = mesh(new THREE.SphereGeometry(0.070, 10, 8), pantsM, 0, -0.10, -0.045);
+    if (bareShins) {
+      const sock = mesh(new THREE.CylinderGeometry(0.052, 0.055, 0.10, 8),
+        new THREE.MeshStandardMaterial({ color: 0xe8e4da, roughness: 0.9 }), 0, -D.shin + 0.06, 0, false);
+      knee.add(sock);
+    }
+    const calf = mesh(new THREE.SphereGeometry(0.070, 10, 8), bareShins ? skinM : pantsM, 0, -0.10, -0.045);
     calf.scale.set(0.9, 1.25, 0.9); knee.add(calf);
     const hem = mesh(new THREE.CylinderGeometry(0.062, 0.066, 0.07, 10), pantsM, 0, -D.shin + 0.02, 0);
     knee.add(hem);
@@ -200,12 +221,12 @@ export function buildHumanoid(o = {}) {
   }
   // ---- pelve + torso com cintura marcada ----
   P.hips = new THREE.Group(); P.hips.position.set(0, D.hipY, 0); g.add(P.hips);
-  P.hips.add(mesh(new THREE.BoxGeometry(D.pelvisW, 0.20, 0.22), pantsM, 0, 0.02, 0));
+  P.hips.add(mesh(new THREE.BoxGeometry(D.pelvisW * bodyWidth, 0.20, 0.22), pantsM, 0, 0.02, 0));
   P.torso = new THREE.Group(); P.torso.position.set(0, D.hipY + 0.10, 0); g.add(P.torso);
   const belly = mesh(new THREE.CapsuleGeometry(0.17, 0.30, 4, 12), skinM, 0, 0.28, 0);
   P.torso.add(belly);
   const chest = mesh(new THREE.CapsuleGeometry(0.20, 0.26, 4, 12), shirtM, 0, 0.30, 0);
-  chest.scale.set(1.06, 1, 1.02); P.torso.add(chest);
+  chest.scale.set(1.06 * bodyWidth, 1, 1.02); P.torso.add(chest);
   P.chestMesh = chest;
   const collar = mesh(new THREE.TorusGeometry(0.095, 0.022, 8, 14, Math.PI * 1.5),
     shirtM, 0, 0.52, 0.01, false);
@@ -216,13 +237,13 @@ export function buildHumanoid(o = {}) {
   }
   // ---- ombros com deltóides + braços cônicos + cotovelo + punho ----
   P.shoulders = new THREE.Group(); P.shoulders.position.set(0, D.shoulderY, 0); g.add(P.shoulders);
-  P.shoulders.add(mesh(new THREE.BoxGeometry(D.shoulderW, 0.14, 0.20), shirtM, 0, 0, 0));
+  P.shoulders.add(mesh(new THREE.BoxGeometry(D.shoulderW * bodyWidth, 0.14, 0.20), shirtM, 0, 0, 0));
   const trap = mesh(new THREE.CylinderGeometry(0.07, 0.16, 0.16, 8), shirtM, 0, 0.09, -0.01);
   P.shoulders.add(trap);
   for (const [key, sx] of [['armL', -1], ['armR', 1]]) {
-    const delt = mesh(new THREE.SphereGeometry(0.082, 10, 8), shirtM, sx * (D.shoulderW / 2 - 0.02), 0.0, 0);
+    const delt = mesh(new THREE.SphereGeometry(0.082, 10, 8), shirtM, sx * (D.shoulderW * bodyWidth / 2 - 0.02), 0.0, 0);
     delt.scale.set(1, 1.1, 1); P.shoulders.add(delt);
-    const sh = new THREE.Group(); sh.position.set(sx * (D.shoulderW / 2 - 0.02), -0.03, 0);
+    const sh = new THREE.Group(); sh.position.set(sx * (D.shoulderW * bodyWidth / 2 - 0.02), -0.03, 0);
     P.shoulders.add(sh);
     const upper = mesh(new THREE.CylinderGeometry(0.072, 0.056, D.upperArm, 8),
       shirtLong ? shirtM : skinM, 0, -D.upperArm / 2, 0);
@@ -245,6 +266,7 @@ export function buildHumanoid(o = {}) {
   P.neck = new THREE.Group(); P.neck.position.set(0, D.shoulderY + 0.06, 0); g.add(P.neck);
   P.neck.add(mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.14, 10), skinM, 0, 0.03, 0));
   P.head = new THREE.Group(); P.head.position.set(0, 0.12, 0); P.neck.add(P.head);
+  if (headSize) P.head.scale.set(headSize[0], headSize[1], headSize[2]);
   const face = buildFace(P.head, skinM, {
     iris: o.iris, detail, brow: o.brow, lip: o.lip, asym: o.asym ?? Math.random() * 0.8 + 0.2,
   });
