@@ -1,11 +1,9 @@
-// Jogador: vendedor ROXO reconstruído sobre Humanoid — proporções humanas,
-// rosto com íris/pupila/nariz/orelhas, dedos, avental em camadas, walk com peso.
+// Jogador: protagonista reconstruído (Protagonist.js) — mesma API, corpo novo.
 import * as THREE from 'three';
 import { CONFIG } from '../core/Config.js';
-import { buildHumanoid, poseWalk, poseRun, poseIdle, clothMat } from './Humanoid.js';
+import { poseWalk, poseRun, poseIdle } from './Humanoid.js';
+import { buildProtagonist, dressVendor } from './Protagonist.js';
 import { buildProductMesh } from './Products3D.js';
-
-const PURPLE = 0x8b3fd9;
 
 export class Player {
   constructor(scene) {
@@ -17,66 +15,16 @@ export class Player {
     this.selling = 0;
     this.fallen = 0;
     this.invuln = 0;
-    this.stepAcc = 0; // fase do ciclo (avança com a distância, sem moonwalk)
+    this.stepAcc = 0;
     this.walkPhase = 0;
     this.blinkT = 2;
     this.build();
   }
   build() {
-    const { group, parts } = buildHumanoid({
-      skin: PURPLE, shirt: 0xf5ecd7, pants: 0x33363d, shoes: 0x26262c,
-      detail: true, iris: 0x4a2c14, asym: 0.7, // olhos castanhos: contraste com a pele roxa
-    });
+    const { group, parts, mats } = buildProtagonist({ bare: false });
+    dressVendor(parts, mats);
     this.group = group; this.P = parts;
     const P = parts;
-    // ---- boné assentado no crânio: calota achatada + aba frontal + broche ----
-    const capM = new THREE.MeshStandardMaterial({ color: 0xc22424, roughness: 0.65 });
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), capM);
-    cap.scale.y = 0.62; cap.position.set(0, 0.16, -0.02); cap.castShadow = true; P.head.add(cap);
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, 0.035, 14, 1, false, -Math.PI / 2, Math.PI), capM);
-    brim.position.set(0, 0.17, 0.08); brim.rotation.x = 0.12; P.head.add(brim);
-    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.03, 10),
-      new THREE.MeshStandardMaterial({ color: PURPLE, roughness: 0.3, emissive: PURPLE, emissiveIntensity: 0.25 }));
-    pin.position.set(0, 0.27, 0.15); pin.rotation.x = 0.6; P.head.add(pin);
-    // cabelo: franja sob a aba + costeletas + nuca (irregular de propósito)
-    const hairM = new THREE.MeshStandardMaterial({ color: 0x1c1210, roughness: 0.95 });
-    for (let f = 0; f < 5; f++) {
-      const fr = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.10, 0.05), hairM);
-      fr.position.set(-0.11 + f * 0.055, 0.125, 0.175);
-      fr.rotation.set(0.15, 0, (f - 2) * 0.10);
-      fr.rotation.y = (f - 2) * -0.12;
-      P.head.add(fr);
-    }
-    for (const sx of [-1, 1]) {
-      const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.08), hairM);
-      tuft.position.set(sx * 0.20, 0.02, 0.06); tuft.rotation.z = sx * -0.15; P.head.add(tuft);
-    }
-    const nape = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.10, 0.06), hairM);
-    nape.position.set(0, -0.02, -0.20); P.head.add(nape);
-    // cinto com fivela (separação camisa/calça)
-    const beltM = new THREE.MeshStandardMaterial({ color: 0x2a1c12, roughness: 0.6 });
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.160, 0.07, 12), beltM);
-    belt.position.set(0, 0.02, 0); P.torso.add(belt);
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02),
-      new THREE.MeshStandardMaterial({ color: 0xb8a43a, metalness: 0.8, roughness: 0.3 }));
-    buckle.position.set(0, 0.02, 0.165); P.torso.add(buckle);
-    // ---- avental EXTRUDADO: trapézio (busto estreito, saia larga), com volume ----
-    const apronM = clothMat(0x6b4a2f, 0.8);
-    const apShape = new THREE.Shape();
-    apShape.moveTo(-0.13, 0.25); apShape.lineTo(0.13, 0.25);
-    apShape.lineTo(0.19, -0.25); apShape.lineTo(-0.19, -0.25); apShape.closePath();
-    const ap = new THREE.Mesh(new THREE.ExtrudeGeometry(apShape, { depth: 0.03, bevelEnabled: false }), apronM);
-    ap.position.set(0, 0.22, 0.155); ap.rotation.x = -0.05; ap.castShadow = true; P.torso.add(ap);
-    const apHem = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.04, 0.035),
-      new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.85 }));
-    apHem.position.set(0, -0.03, 0.165); P.torso.add(apHem); // bainha da saia
-    for (const sx of [-1, 1]) {
-      const strap = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.30, 0.025), apronM);
-      strap.position.set(sx * 0.11, 0.55, 0.175); strap.rotation.x = -0.12; P.torso.add(strap);
-    }
-    const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x3fa34d, roughness: 0.7 }));
-    pocket.position.set(0.02, 0.10, 0.20); P.torso.add(pocket);
     // ---- bandeja articulada na mão esquerda (compensa o balanço, fica nivelada) ----
     const trayPivot = new THREE.Group();
     trayPivot.position.set(0, -0.02, 0.02);
@@ -94,7 +42,7 @@ export class Player {
     this.shield.rotation.x = Math.PI / 2; this.shield.position.y = 0.15; this.shield.visible = false;
     group.add(this.shield);
     group.position.copy(this.pos);
-    group.scale.setScalar(0.95);
+    group.scale.setScalar(0.96); // ~1.85m
     this.scene.add(group);
   }
   setTray(productId) {

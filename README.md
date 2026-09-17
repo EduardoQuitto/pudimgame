@@ -228,7 +228,6 @@ Modelo anterior descartado por inadequação estrutural; `Humanoid` v2:
 Validado em frente/lado/costas/3-4/corrida/venda por screenshot; mesma API e rig.
 
 ## Emergência de arte — base humana refeita (lathe + proporções)
-
 Diagnóstico: esferas/cilindros nunca leriam como corpo contínuo. Correção estrutural:
 - **Tronco em lathe** (superfície única quadril→cintura→peito→ombro; cápsula virou núcleo
   interno), camisa como casca anatômica, colarinho/botões reassentados na superfície.
@@ -237,6 +236,21 @@ Diagnóstico: esferas/cilindros nunca leriam como corpo contínuo. Correção es
   com bainha (não mais placa retangular).
 - Teste de silhueta cinza aprovado: pessoa contínua, sem tubo.
 Pedestres e motoristas herdaram tudo (mesma base, mesmo rig); animações reconectadas.
+
+## Última reconstrução do protagonista (Protagonist.js, sem remendos)
+
+Modelo anterior descartado; pedestres intocados. Novo humano-base em estágios:
+- **Base neutra** (cinza, sem roupa/cabelo/cor) aprovada primeiro no teste de silhueta.
+- Proporções adultas (~5.7 cabeças, 1.87m, pernas 50%), quadril com volume fundindo
+  perna e tronco, pescoço longo com trapézio, cabeça esculpida menor, olhos
+  proporcionais embutidos, nariz/boca/orelhas refeitos, mãos e pés maiores.
+- **Vendor**: camisa em lathe, mangas, avental extrudado com amarração nas costas,
+  cinto, cabelo curto com franja/costeleta/nuca, boné, roxo em 2 tons (pele + rosto).
+- Rig completo reutilizável (root/pelvis/torso/shoulders/neck/head/braços/mãos/
+  coxas/panturrilhas/pés); walk/run/sell/idle reconectados e validados em screenshot
+  (frente/lado/costas/3-4/corrida/venda com venda concluída).
+- Debug real do ciclo: material branco no rosto era `buildHead(P.head, M.face)` com
+  `M.face` dentro (indireção dupla → undefined → MeshBasicMaterial); corrigido.
 
 ## Pedestres v2 (sistema modular de verdade)
 

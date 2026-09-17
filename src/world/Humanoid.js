@@ -31,7 +31,7 @@ function mesh(geo, material, x = 0, y = 0, z = 0, shadow = true) {
 }
 
 // Escultura procedural do crânio: afina o queixo, marca maçãs/testa, achata a nuca.
-function sculptSkull(geo, R) {
+export function sculptSkull(geo, R) {
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
