@@ -39,6 +39,8 @@ export const MISSIONS = [
   { id: 'm6', txt: 'Complete 15 vendas',               need: 15,  stat: 'sales',        rw: { money: 60, xp: 50 } },
   { id: 'm7', txt: 'Fature R$ 400 no total',           need: 400, stat: 'earned',       rw: { money: 80, xp: 70 } },
   { id: 'm8', txt: 'Alcance o combo x5',               need: 5,   stat: 'bestCombo',    rw: { money: 120, xp: 100 } },
+  { id: 'm9', txt: 'Complete 30 vendas',               need: 30,  stat: 'sales',        rw: { money: 100, xp: 80 } },
+  { id: 'm10', txt: 'Fature R$ 1000 no total',         need: 1000, stat: 'earned',      rw: { money: 150, xp: 120 } },
 ];
 
 // Tipos de cliente especial: peso base, multiplicadores e comportamento.

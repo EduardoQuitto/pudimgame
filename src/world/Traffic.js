@@ -177,6 +177,7 @@ class Car {
     const drvSkin = new THREE.MeshStandardMaterial({ color: SKIN[i % SKIN.length], roughness: 0.65 });
     // LOD: motorista some além de 22m (silhueta do carro continua)
     this.driverDetail = new THREE.Group();
+    this.driverDetail.scale.setScalar(0.85); // proporção correta dentro da cabine
     this.group.add(this.driverDetail);
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.28, 4, 8), drvM);
     torso.position.set(-0.32, seatY + 0.10, 0.35); torso.rotation.z = 0.18; this.driverDetail.add(torso);
@@ -196,8 +197,8 @@ class Car {
       hand.position.set(0.24, seatY + 0.09, 0.35 + s * 0.10); this.driverDetail.add(hand);
     }
     this.head = new THREE.Group();
-    this.head.position.set(-0.28, seatY + 0.44, 0.35);
-    this.headBaseY = seatY + 0.44;
+    this.head.position.set(-0.28, seatY + 0.40, 0.35);
+    this.headBaseY = seatY + 0.40;
     const skull = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), drvSkin);
     skull.castShadow = false; this.head.add(skull);
     const dEyeM = new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.4 });
@@ -213,6 +214,7 @@ class Car {
     // badges de estado: ! interessado, ? decidindo, ✓/✗ resultado
     this.badgeTex = {
       interest: badgeTexture('!', '#fbbf24'),
+      fast: badgeTexture('»', '#7dd3fc'), // apressado: janela curta, decida rápido
       decide: badgeTexture('?', '#7dd3fc'),
       yes: badgeTexture('✓', '#4ade80'),
       no: badgeTexture('✗', '#f87171'),
@@ -326,7 +328,7 @@ export class Traffic {
         if (c.reactHideT <= 0) c.badge.visible = false;
       } else if (saleCar === c) { c.badge.material.map = c.badgeTex.decide; c.badge.visible = true; }
       else if (c.reactT <= 0) {
-        c.badge.material.map = c.badgeTex.interest;
+        c.badge.material.map = c.customer.id === 'apressado' ? c.badgeTex.fast : c.badgeTex.interest;
         c.badge.visible = stopped && !c.soldThisRed;
       }
       if (c.badge.visible) c.badge.position.y = c.badgeBaseY + Math.sin(this.now * 4) * 0.12;

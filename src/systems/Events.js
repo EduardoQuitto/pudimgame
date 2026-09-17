@@ -1,7 +1,8 @@
 // Eventos aleatórios: variedade real com efeitos temporários.
 export class GameEvents {
-  constructor(audio, traffic, weather, ui) {
+  constructor(audio, traffic, weather, ui, economy = null) {
     this.audio = audio; this.traffic = traffic; this.weather = weather; this.ui = ui;
+    this.eco = economy;
     this.t = 40;
     this.promoUntil = 0; this.now = 0;
     this.fiscalUntil = 0;
@@ -27,6 +28,19 @@ export class GameEvents {
       this.fiscalUntil = this.now + 12;
       return { title: '🧾 FISCALIZAÇÃO!', sub: 'Fique na CALÇADA por 12s ou pague multa de R$15.' };
     } else if (roll < 0.78) { // VIP garantido
+      this.traffic.forceVipNext = true;
+      return { title: '👑 DIZEM QUE UM VIP ESTÁ CHEGANDO...', sub: 'Fique de olho nos próximos carros!' };
+    } else if (roll < 0.86) { // fornecedor: repoõe o equipado de graça (respiro)
+      if (this.eco) {
+        const id = this.eco.s.data.equipped;
+        const room = this.eco.capacity() - this.eco.totalStock();
+        const give = Math.min(room, 6);
+        if (give > 0) {
+          this.eco.s.data.inv[id] += give;
+          const p = this.eco.product(id);
+          return { title: '🚚 FORNECEDOR PASSOU!', sub: `+${give} ${p.icon} ${p.name} de graça. Aproveite a fase!` };
+        }
+      }
       this.traffic.forceVipNext = true;
       return { title: '👑 DIZEM QUE UM VIP ESTÁ CHEGANDO...', sub: 'Fique de olho nos próximos carros!' };
     } else if (roll < 0.90) { // chuva

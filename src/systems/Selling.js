@@ -97,7 +97,7 @@ export class Selling {
     const xpGain = cust.xp + (tip ? 4 : 0) + (combo >= 3 ? 6 : 0);
     prog.addXP(xpGain, ctx.onLevelUp);
     return {
-      ok: true, total, tip, combo, special, qty, xp: xpGain, bargain, yellowBonus,
+      ok: true, total, tip, combo, special, qty, xp: xpGain, bargain, yellowBonus, cust: cust.id,
       txt: `+R$ ${total}`,
       sub: `${cust.name ? cust.name + ' • ' : ''}${qty}x ${prod.icon} ${prod.name}${bargain ? ' • pechincha -20%' : ''}${tip ? ` • gorjeta +R$${tip}` : ''}${yellowBonus ? ' • +25% AMARELO' : ''}${combo >= 2 ? ` • 🔥x${combo}` : ''}`,
     };

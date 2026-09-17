@@ -71,6 +71,9 @@ export class AudioSys {
     this.tone(this.vary(1319, 0.02), 0.16, 'square', 0.09, null, 0.08, pan);
   }
   bigSale() { [523, 659, 784, 1047].forEach((f, i) => this.tone(this.vary(f, 0.015), 0.16, 'triangle', 0.13, null, i * 0.09)); }
+  vip() { [784, 988, 1175, 1568, 2093].forEach((f, i) => this.tone(f, 0.2, 'sine', 0.11, null, i * 0.07)); }
+  comboLost() { [392, 330, 262].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.1, null, i * 0.1)); }
+  countTick(last = false) { this.tone(last ? 880 : 660, last ? 0.2 : 0.09, 'square', 0.08); }
   refuse() { this.tone(this.vary(220, 0.05), 0.18, 'sawtooth', 0.07, 160); }
   horn(pan = 0, vol = 1) {
     const now = performance.now() / 1000;

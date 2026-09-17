@@ -89,7 +89,7 @@ export class Game {
       this.upgrades = new Upgrades(this.save, this.economy);
       this.prog = new Progression(this.save);
       this.missions = new Missions(this.save, this.economy, this.prog);
-      this.events = new GameEvents(this.audio, this.traffic, this.weather, null);
+      this.events = new GameEvents(this.audio, this.traffic, this.weather, null, this.economy);
       this.selling = new Selling();
       this.ui = new UI(this);
 
@@ -438,7 +438,8 @@ export class Game {
     const p = this.player.pos;
     for (const c of this.traffic.cars) {
       if (!c.active || c.v < 2.5) continue;
-      if (Math.abs(c.x - p.x) < 2.3 && Math.abs(c.z - p.z) < 1.35) {
+      // hitbox justa: metade do carro + 25cm de margem (não uma caixa genérica)
+      if (Math.abs(c.x - p.x) < c.len / 2 + 0.25 && Math.abs(c.z - p.z) < 1.15) {
         this.crash(c);
         break;
       }
@@ -552,13 +553,15 @@ export class Game {
 
   // ---------- loop ----------
   tick() {
-    const rawDt = Math.min(0.1, this.clock.getDelta());
+    const delta = Math.max(0.0001, this.clock.getDelta());
+    const rawDt = Math.min(0.1, delta); // física: clamp anti-espiral
+    // FPS real usa delta SEM clamp (o clamp criava piso falso em 10fps)
     // hitstop: congela brevemente o mundo no impacto
     let dt = rawDt;
     if (this.hitT > 0) { this.hitT -= rawDt; dt = rawDt * 0.12; }
     // auto-qualidade: FPS baixo sustentado reduz um nível (com cooldown)
-    if (rawDt > 0) {
-      this.fpsEMA = this.fpsEMA * 0.95 + (1 / rawDt) * 0.05;
+    if (delta > 0) {
+      this.fpsEMA = this.fpsEMA * 0.95 + (1 / delta) * 0.05;
       this.fpsT += rawDt; this.qCooldown -= rawDt;
       if (this.fpsT > 4) {
         this.fpsT = 0;
@@ -615,7 +618,21 @@ export class Game {
     this.weather.update(dt, this.player.pos.x);
     const ev = this.events.update(dt, this.upgrades.luck);
     if (ev) this.ui.banner(ev.title, ev.sub, 5);
+    const prevCombo = this.prog.combo;
     this.prog.update(dt);
+    // combo perdido com valor: feedback claro (não some em silêncio)
+    if (prevCombo >= 3 && this.prog.combo === 0) {
+      this.ui.toast(`💔 <b>Combo x${prevCombo} perdido!</b>`, 'bad');
+      this.audio.comboLost();
+    }
+    // contagem regressiva do vermelho: tensão nos últimos 5s
+    if (this.light.state === 'red' && this.light.timeLeft <= 5) {
+      if (this._lastTick !== this.light.timeLeft) {
+        this._lastTick = this.light.timeLeft;
+        this.audio.countTick(this.light.timeLeft <= 2);
+        if (this.light.timeLeft <= 3) this.cam.addTrauma(0.05);
+      }
+    } else this._lastTick = -1;
 
     // fiscalização: multa se ficar na rua
     if (this.events.fiscal) {
@@ -751,7 +768,8 @@ export class Game {
       car.react(true);
       const pan = Math.max(-1, Math.min(1, (car.z - this.player.pos.z) * 0.5));
       this.audio.coin(pan);
-      if (res.special || res.total >= 25) this.audio.bigSale();
+      if (res.cust === 'vip') this.audio.vip();
+      else if (res.special || res.total >= 25) this.audio.bigSale();
       this.effects.burst(this.player.pos, res.special ? 0xe879f9 : 0xffd166, 30);
       this.effects.cashFly(car.group.position, this.player.pos);
       this.effects.float(this.player.pos, res.txt, res.special ? '#e879f9' : '#fbbf24');

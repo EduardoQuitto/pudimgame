@@ -184,6 +184,22 @@ Cenário: skyline, fios de catenária, transformador, rampas + piso tátil.
 Testes: fluxo completo de menus, presets com estados verificados, save após reload,
 matemática de venda simulada — zero erros de console.
 
+## Etapa 6 — gameplay 2.0 (diversão, não features)
+
+Auditoria com bots (20 ciclos × 3 estratégias): cauteloso progride (R$169, lv5),
+agressivo lucra 2.4× com risco (4 acidentes), estrategista troca caixa por upgrades —
+economia aprovada sem rebalance.
+- **Tensão**: contagem regressiva nos últimos 5s do vermelho (pill pulsante + ticks +
+  micro-tremor), bônus de demanda por fase, +25% fechando no amarelo.
+- **Risco/recompensa**: apressado com badge » e paciência de 8s, pechincha do exigente,
+  hitbox justa por tamanho do carro, toast + som ao perder combo x3+.
+- **Feedback**: sons próprios p/ VIP, combo perdido e contagem; +XP flutuante; notas voando.
+- **Vida**: evento fornecedor (reposição grátis), missões até m10, ajuda documenta o amarelo.
+- **Correções reais do QA**: medidor de FPS usava delta clampado (piso falso em 10 —
+  auto-qualidade media errado); motorista reduzido à cabine; vendas validadas de ponta
+  a ponta no navegador (R$20→28, estoque, combo, XP, missão 1/5, pause/resume).
+Loop completo confirmado em screenshot: oferta → ✓ no carro → toast → HUD → tutorial avança.
+
 ## Etapa 5 — reconstrução da direção de arte (geometria, não efeitos)
 
 Créditos atualizados: **Encomendado por Lucas Rocha**.

@@ -177,6 +177,8 @@ body[data-uiscale="large"] #interact { font-size:22px; }
 #hud-light.yellow { border-color:#ca8a04; color:#facc15; }
 #hud-light.red { border-color:#dc2626; color:#f87171; box-shadow:0 0 18px #dc262655; }
 #hud-light-t { font-variant-numeric:tabular-nums; opacity:.85; }
+#hud-light.urgent { animation:urgentPulse .5s infinite; }
+@keyframes urgentPulse { 50% { transform:scale(1.08); } }
 body.cb #hud-light.green { border-color:#0284c7; color:#38bdf8; }
 body.cb #hud-light.red { border-color:#ea580c; color:#fb923c; box-shadow:0 0 18px #ea580c55; }
 

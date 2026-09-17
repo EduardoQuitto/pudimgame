@@ -164,7 +164,7 @@ export class UI {
     }
     const L = this.g.light;
     const chip = $('hud-light');
-    chip.className = 'light ' + L.state;
+    chip.className = 'light ' + L.state + (L.state === 'red' && L.timeLeft <= 5 ? ' urgent' : '');
     $('hud-light-txt').textContent = L.state === 'green' ? 'VERDE' : L.state === 'yellow' ? 'AMARELO' : 'VERMELHO';
     $('hud-light-t').textContent = L.timeLeft + 's';
     const m = this.g.missions.current();
