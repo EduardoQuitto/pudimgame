@@ -199,6 +199,7 @@ export class MapWorld {
     // rampas de acessibilidade na faixa + piso tátil (detalhe urbano real)
     const rampM = new THREE.MeshStandardMaterial({ color: 0x8f8b84, roughness: 0.95 });
     const tactM = new THREE.MeshStandardMaterial({ color: 0xb89a3a, roughness: 0.9 });
+    const drainM = new THREE.MeshStandardMaterial({ color: 0x17181d, roughness: 0.9 });
     for (const sz of [-1, 1]) {
       const ramp = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.12, 1.1), rampM);
       ramp.position.set(0, 0.06, sz * 5.15); ramp.rotation.x = sz * 0.12;
@@ -206,6 +207,16 @@ export class MapWorld {
       const tact = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), tactM);
       tact.rotation.x = -Math.PI / 2; tact.position.set(0, 0.19, sz * 5.9);
       tact.receiveShadow = true; S.add(tact);
+    }
+    // bocas de lobo junto ao meio-fio (drenagem da rua)
+    for (const [x, sz] of [[-12, -1], [12, 1], [26, -1]]) {
+      const drain = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.4), drainM);
+      drain.position.set(x, 0.10, sz * 5.05); drain.receiveShadow = true; S.add(drain);
+      for (let s = 0; s < 4; s++) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.065, 0.36),
+          new THREE.MeshStandardMaterial({ color: 0x3a3d44, roughness: 0.6, metalness: 0.4 }));
+        bar.position.set(x - 0.24 + s * 0.16, 0.10, sz * 5.05); S.add(bar);
+      }
     }
 
     // ---------- PRÉDIOS de fundo (fachadas claras + vitrines térreas acesas) ----------
@@ -231,12 +242,38 @@ export class MapWorld {
         const hh = 8 + ((i * 37 + (sz > 0 ? 3 : 0)) % 7);
         const col = bColors[(i + (sz > 0 ? 2 : 0)) % bColors.length];
         const winTex = winTexs[(i + (sz > 0 ? 1 : 0)) % winTexs.length];
+        const bw = 9 + ((i * 2 + (sz > 0 ? 1 : 0)) % 3) * 1.5; // larguras variadas
+        const bh = hh;
         const bmat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
-        const b = new THREE.Mesh(new THREE.BoxGeometry(10, hh, 7), bmat);
-        b.position.set(x, hh / 2 - 0.1, sz * 15.5); S.add(b);
-        const win = new THREE.Mesh(new THREE.PlaneGeometry(9.4, hh * 0.85),
+        const b = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 7), bmat);
+        b.position.set(x, bh / 2 - 0.1, sz * 15.5); S.add(b);
+        // cornija + platibanda: o topo não termina em corte seco
+        const cor = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.5, 0.35, 7.4),
+          new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.8 }));
+        cor.position.set(x, bh - 0.25, sz * 15.5); S.add(cor);
+        // telhado vivido: caixa d'água, ar-condicionado, antena (sorteados por prédio)
+        if ((i + (sz > 0 ? 1 : 0)) % 2 === 0) {
+          const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.6, 12),
+            new THREE.MeshStandardMaterial({ color: 0x1f3a5f, roughness: 0.6 }));
+          tank.position.set(x - bw / 4, bh + 0.7, sz * 15.5); tank.castShadow = true; S.add(tank);
+          const lid = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.5, 12),
+            new THREE.MeshStandardMaterial({ color: 0x16283f, roughness: 0.6 }));
+          lid.position.set(x - bw / 4, bh + 1.75, sz * 15.5); S.add(lid);
+        }
+        if ((i + (sz > 0 ? 2 : 0)) % 3 === 0) {
+          const ac = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.5),
+            new THREE.MeshStandardMaterial({ color: 0x9aa0a8, roughness: 0.5, metalness: 0.4 }));
+          ac.position.set(x + bw / 4, bh - 1.6, sz * 11.8); S.add(ac);
+        }
+        if ((i + (sz > 0 ? 0 : 1)) % 3 === 1) {
+          const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.6, 6), poleMatFix);
+          ant.position.set(x + bw / 3, bh + 1.2, sz * 15.5); S.add(ant);
+          const cross = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.04), poleMatFix);
+          cross.position.set(x + bw / 3, bh + 2.0, sz * 15.5); S.add(cross);
+        }
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(bw - 0.6, bh * 0.85),
           new THREE.MeshStandardMaterial({ map: winTex, emissive: 0xffffff, emissiveMap: winTex, emissiveIntensity: 0.55, roughness: 0.4 }));
-        win.position.set(x, hh / 2, sz * 11.94); win.rotation.y = sz > 0 ? Math.PI : 0; S.add(win);
+        win.position.set(x, bh / 2, sz * 11.94); win.rotation.y = sz > 0 ? Math.PI : 0; S.add(win);
         // térreo: recesso escuro + porta/vitrine acesa (loja aberta no fim de tarde)
         const face = sz * 11.93;
         const recess = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 2.9), recessM);
@@ -262,7 +299,7 @@ export class MapWorld {
           new THREE.MeshStandardMaterial({ map: signTex, emissive: 0xffd166, emissiveMap: signTex, emissiveIntensity: 0.7 }));
         sign.position.set(x - 1, 4.1, sz * 11.85); sign.rotation.y = sz > 0 ? Math.PI : 0; S.add(sign);
         ni++;
-        this.addCollider(x, sz * 13, 11, 6, hh);
+        this.addCollider(x, sz * 13, bw + 1, 6, bh);
       }
     }
 
@@ -274,12 +311,20 @@ export class MapWorld {
     // posições alternadas e irregulares (rua real, não simétrica)
     for (const [x, sz] of [[-26, -1], [-14, 1], [-4, -1], [8, 1], [18, -1], [28, 1]]) {
         const g = new THREE.Group();
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 5.4, 8), poleMat);
-        pole.position.y = 2.7; pole.castShadow = true; g.add(pole);
+        const pbase = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.20, 0.5, 8), poleMat);
+        pbase.position.y = 0.25; pbase.castShadow = true; g.add(pbase);
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.35, 0.04),
+          new THREE.MeshStandardMaterial({ color: 0x1a1c20, roughness: 0.6 }));
+        door.position.set(0, 0.9, 0.11); g.add(door);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 5.0, 8), poleMat);
+        pole.position.y = 2.9; pole.castShadow = true; g.add(pole);
         const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), poleMat);
         arm.rotation.z = Math.PI / 2; arm.position.set(0, 5.3, -sz * 0.6); g.add(arm);
-        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), lampMat);
-        bulb.position.set(0, 5.2, -sz * 1.25); g.add(bulb);
+        // cabeça: caixa + difusor emissivo (luminária de verdade, não esfera)
+        const housing = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.24), poleMat);
+        housing.position.set(0, 5.28, -sz * 1.25); housing.castShadow = true; g.add(housing);
+        const diffuser = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.18), lampMat);
+        diffuser.rotation.x = Math.PI / 2; diffuser.position.set(0, 5.21, -sz * 1.25); g.add(diffuser);
         const cone = new THREE.Mesh(new THREE.ConeGeometry(1.3, 3.2, 16, 1, true),
           new THREE.MeshBasicMaterial({ color: 0xffc873, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false }));
         cone.position.set(0, 3.6, -sz * 1.25); g.add(cone);
@@ -313,37 +358,84 @@ export class MapWorld {
     transf.position.set(-18, 4.6, -8.6); S.add(transf);
 
     // ---------- árvores, lixeiras, bancos, cones, barreiras ----------
-    const trunkM = new THREE.MeshStandardMaterial({ color: 0x5a3d26, roughness: 0.9 });
-    const leafMs = [0x3a6b41, 0x46704a, 0x2f6138].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 }));
+    // árvores: tronco afunilado + galhos + copa de icosaedros (folhagem facetada, barata)
+    const trunkM = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.95 });
+    const leafMs = [0x3a6b41, 0x46704a, 0x2f6138].map(c =>
+      new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, flatShading: true }));
     for (const [x, sz] of [[-20, 1], [-8, -1], [10, 1], [22, -1], [-34, 1]]) {
       const t = new THREE.Group();
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1.8, 7), trunkM);
-      trunk.position.y = 0.9; trunk.castShadow = true; t.add(trunk);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.22, 2.2, 7), trunkM);
+      trunk.position.y = 1.1; trunk.castShadow = true; t.add(trunk);
+      for (const [bx, br, bl] of [[-0.3, 0.5, 0.9], [0.3, -0.4, 0.8]]) {
+        const br = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, bl, 6), trunkM);
+        br.position.set(bx, 2.0, 0); br.rotation.z = br; t.add(br);
+      }
       const leafM = leafMs[Math.abs(x) % leafMs.length];
-      for (let i = 0; i < 3; i++) {
-        const s = new THREE.Mesh(new THREE.SphereGeometry(0.8 - i * 0.15, 10, 8), leafM);
-        s.position.set((Math.random() - 0.5) * 0.5, 2.1 + i * 0.5, (Math.random() - 0.5) * 0.5);
-        s.scale.y = 0.85; // copa levemente achatada, menos "pirulito"
+      const blobs = [[0, 2.9, 0, 0.95], [-0.55, 2.5, 0.15, 0.62], [0.55, 2.55, -0.1, 0.66], [0.1, 2.3, 0.4, 0.5], [-0.15, 2.35, -0.4, 0.52], [0, 3.4, -0.1, 0.55]];
+      for (const [ox, oy, oz, r] of blobs) {
+        const s = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), leafM);
+        s.position.set(ox, oy, oz);
+        s.rotation.set(Math.random() * 3, Math.random() * 3, 0);
         s.castShadow = true; t.add(s);
       }
-      t.position.set(x, 0, sz * 8.4); S.add(t);
+      t.position.set(x, 0, sz * 8.4); t.rotation.y = Math.random() * 6.28; S.add(t);
       this.trees.push({ g: t, phase: Math.random() * 6.28 });
-      this.addCollider(x, sz * 8.4, 0.6, 0.6, 3);
+      this.addCollider(x, sz * 8.4, 0.6, 0.6, 3.6);
     }
+    // lixeiras com nervuras + tampa + alça
     const binM = new THREE.MeshStandardMaterial({ color: 0x1f6f43, roughness: 0.7 });
+    const binDark = new THREE.MeshStandardMaterial({ color: 0x143d26, roughness: 0.8 });
     for (const [x, sz] of [[-14, 1], [4, -1], [16, 1], [-26, -1]]) {
-      const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.8, 10), binM);
-      bin.position.set(x, 0.55, sz * 8.9); bin.castShadow = true; S.add(bin);
-    }
-    const benchM = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.8 });
-    for (const [x, sz] of [[-4, 1], [12, -1]]) {
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 0.5), benchM);
-      bench.position.set(x, 0.65, sz * 8.8); bench.castShadow = true; S.add(bench);
-      for (const dx of [-0.7, 0.7]) {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.55, 0.45), poleMat);
-        leg.position.set(x + dx, 0.35, sz * 8.8); S.add(leg);
+      const bg = new THREE.Group();
+      const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.8, 12), binM);
+      bin.position.y = 0.4; bin.castShadow = true; bg.add(bin);
+      for (const ry of [0.25, 0.55]) {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(0.305, 0.02, 6, 14), binDark);
+        rib.rotation.x = Math.PI / 2; rib.position.y = ry; bg.add(rib);
       }
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.08, 12), binDark);
+      lid.position.y = 0.84; lid.castShadow = true; bg.add(lid);
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.06), binDark);
+      handle.position.set(0, 0.9, 0); bg.add(handle);
+      bg.position.set(x, 0.18, sz * 8.9); bg.rotation.y = x; S.add(bg);
+    }
+    // bancos de ripas com estrutura de ferro (altura real de assento ~0.45)
+    const benchM = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.8 });
+    const ironM = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.5, metalness: 0.5 });
+    for (const [x, sz] of [[-4, 1], [12, -1]]) {
+      const bg = new THREE.Group();
+      for (let s = 0; s < 3; s++) {
+        const slat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.13), benchM);
+        slat.position.set(0, 0.27, -0.16 + s * 0.16); slat.castShadow = true; bg.add(slat);
+      }
+      for (let s = 0; s < 2; s++) {
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.11, 0.05), benchM);
+        back.position.set(0, 0.50 + s * 0.16, 0.24); back.rotation.x = -0.12; bg.add(back);
+      }
+      for (const dx of [-0.75, 0.75]) {
+        const side = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.27, 0.55), ironM);
+        side.position.set(dx, 0.135, 0); bg.add(side);
+      }
+      bg.position.set(x, 0.18, sz * 8.8); bg.rotation.y = (x % 2) * 0.05; S.add(bg);
       this.addCollider(x, sz * 8.8, 1.8, 0.6, 1);
+    }
+    // hidrante amarelo (marco urbano brasileiro)
+    const hydM = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.55 });
+    const hydD = new THREE.MeshStandardMaterial({ color: 0x8a6d1a, roughness: 0.6 });
+    for (const [x, sz] of [[-18, -1], [14, 1]]) {
+      const hg = new THREE.Group();
+      const hb = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.55, 10), hydM);
+      hb.position.y = 0.28; hb.castShadow = true; hg.add(hb);
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), hydM);
+      dome.position.y = 0.55; hg.add(dome);
+      const nut = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.07, 6), hydD);
+      nut.position.y = 0.68; hg.add(nut);
+      for (const s of [-1, 1]) {
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.08, 8), hydD);
+        cap.rotation.z = Math.PI / 2; cap.position.set(s * 0.16, 0.42, 0); hg.add(cap);
+      }
+      hg.position.set(x, 0.18, sz * 8.9); hg.rotation.y = x * 0.3; S.add(hg);
+      this.addCollider(x, sz * 8.9, 0.5, 0.5, 0.9);
     }
     // barreiras nas extremidades (limite físico claro)
     const barM = new THREE.MeshStandardMaterial({ color: 0xb34d18, roughness: 0.6 });
@@ -359,11 +451,18 @@ export class MapWorld {
       wall.position.set(ex + (ex > 0 ? 2.5 : -2.5), 2, 0); S.add(wall);
       this.addCollider(ex, 0, 2, 26, 5);
     }
-    // cones
+    // cones com base quadrada + faixa refletiva
     const coneM = new THREE.MeshStandardMaterial({ color: 0xe85d1f, roughness: 0.6 });
+    const coneBandM = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.4, emissive: 0xffffff, emissiveIntensity: 0.25 });
     for (const [x, z] of [[-5.5, -4.6], [5.5, 4.6], [-24, -4.6]]) {
-      const c = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 10), coneM);
-      c.position.set(x, 0.28, z); c.castShadow = true; S.add(c);
+      const cg = new THREE.Group();
+      const bs = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.05, 0.36), coneM);
+      bs.position.y = 0.025; cg.add(bs);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(0.20, 0.52, 10), coneM);
+      c.position.y = 0.31; c.castShadow = true; cg.add(c);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.15, 0.10, 10), coneBandM);
+      band.position.y = 0.33; cg.add(band);
+      cg.position.set(x, 0, z); cg.rotation.y = x; S.add(cg);
     }
 
     // poças: camada d'água sobre o asfalto — forma irregular, borda suave,
@@ -413,6 +512,30 @@ export class MapWorld {
       const ctl = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.62, 0.28),
         new THREE.MeshStandardMaterial({ color: 0x3a4148, roughness: 0.6, metalness: 0.4 }));
       ctl.position.set(0.25, 1.1, 0); ctl.castShadow = true; g.add(ctl);
+      // sinal de pedestre: homenzinho vermelho/verde acompanha o ciclo
+      const pedBox = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.52, 0.22), headM);
+      pedBox.position.set(0, 2.55, 0); g.add(pedBox);
+      const pedTexR = canvasTex(32, 64, (gg, w, h) => {
+        gg.fillStyle = '#0a0a0c'; gg.fillRect(0, 0, w, h);
+        gg.fillStyle = '#ff2a2a'; gg.beginPath(); gg.arc(w / 2, 12, 6, 0, 7); gg.fill();
+        gg.fillRect(w / 2 - 6, 20, 12, 22); gg.fillRect(w / 2 - 9, 24, 4, 14); gg.fillRect(w / 2 + 5, 24, 4, 14);
+      });
+      const pedTexG = canvasTex(32, 64, (gg, w, h) => {
+        gg.fillStyle = '#0a0a0c'; gg.fillRect(0, 0, w, h);
+        gg.fillStyle = '#2aff5a'; gg.beginPath(); gg.arc(w / 2 + 3, 10, 6, 0, 7); gg.fill();
+        gg.fillRect(w / 2 - 8, 18, 12, 20); gg.fillRect(w / 2 - 10, 20, 4, 12); gg.fillRect(w / 2 + 8, 30, 5, 12);
+      });
+      const pedRM = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xffffff, emissiveMap: pedTexR, emissiveIntensity: 1.2 });
+      const pedGM = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xffffff, emissiveMap: pedTexG, emissiveIntensity: 0.06 });
+      const pedFace = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.4), pedRM);
+      pedFace.position.set(0, 2.62, sz > 0 ? -0.12 : 0.12);
+      pedFace.rotation.y = sz > 0 ? Math.PI : 0;
+      g.add(pedFace);
+      const pedFace2 = pedFace.clone();
+      pedFace2.material = pedGM; pedFace2.visible = false;
+      pedFace2.position.copy(pedFace.position); pedFace2.rotation.copy(pedFace.rotation);
+      g.add(pedFace2);
+      // (registrado no push final, após lenses + glow existirem)
       const lamps = {};
       const cols = [['red', 0xff2a2a, 0.55], ['yellow', 0xffc41f, 0], ['green', 0x2aff5a, -0.55]];
       for (const [name, col, dy] of cols) {
@@ -428,7 +551,7 @@ export class MapWorld {
       const glow = new THREE.PointLight(0xff2a2a, 6, 12, 1.8);
       glow.position.set(0, 4.2, 0); g.add(glow);
       g.position.set(x, 0, sz * 5.9); S.add(g);
-      this.lightHeads.push({ lamps, glow });
+      this.lightHeads.push({ lamps, glow, pedR: pedFace, pedG: pedFace2 });
       this.addCollider(x, sz * 5.9, 0.5, 0.5, 4.4);
     }
 
@@ -458,6 +581,13 @@ export class MapWorld {
       h.lamps.yellow.emissiveIntensity = on.yellow;
       h.lamps.green.emissiveIntensity = on.green;
       h.glow.color.set(state === 'red' ? 0xff2a2a : state === 'yellow' ? 0xffc41f : 0x2aff5a);
+      // pedestre anda com carro parado: verde no vermelho dos carros
+      const walk = state === 'red';
+      if (h.pedR && h.pedG) {
+        h.pedR.visible = !walk; h.pedG.visible = walk;
+        h.pedR.material.emissiveIntensity = walk ? 0.06 : 1.4;
+        h.pedG.material.emissiveIntensity = walk ? 1.6 : 0.06;
+      }
     }
   }
 
@@ -467,12 +597,24 @@ export class MapWorld {
     const g = new THREE.Group();
     const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness: 0.75 });
     const woodD = new THREE.MeshStandardMaterial({ color: 0x5e3b1f, roughness: 0.8 });
-    // base: mesa
-    const top = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 1.2), wood);
-    top.position.y = 0.95; top.castShadow = true; g.add(top);
+    // base: mesa de tábuas com vãos + travessas (marcenaria, não bloco)
+    for (let s = 0; s < 5; s++) {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.06, 0.20), wood);
+      slat.position.set(0, 0.95, -0.48 + s * 0.24); slat.castShadow = true; slat.receiveShadow = true; g.add(slat);
+    }
+    for (const dx of [-1.2, 1.2]) {
+      const batten = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 1.15), woodD);
+      batten.position.set(dx, 0.89, 0); g.add(batten);
+    }
     for (const [dx, dz] of [[-1.2, -0.5], [1.2, -0.5], [-1.2, 0.5], [1.2, 0.5]]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.95, 0.1), woodD);
-      leg.position.set(dx, 0.47, dz); g.add(leg);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.9, 0.1), woodD);
+      leg.position.set(dx, 0.45, dz); leg.castShadow = true; g.add(leg);
+    }
+    // etiquetas de preço na borda (papel dobrado)
+    const tagM = new THREE.MeshStandardMaterial({ color: 0xf0e6cc, roughness: 0.9, side: THREE.DoubleSide });
+    for (const tx of [-1, 0, 1]) {
+      const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.12), tagM);
+      tag.position.set(tx, 1.06, 0.62); tag.rotation.x = -0.35; g.add(tag);
     }
     // mostruário: um de cada produto, cada um com sua silhueta
     const plateM = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.3 });
@@ -500,7 +642,10 @@ export class MapWorld {
     // caixa registradora + dinheiro
     const reg = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.4),
       new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.4, metalness: 0.5 }));
-    reg.position.set(1.0, 1.16, -0.3); reg.castShadow = true; g.add(reg);
+    reg.position.set(1.0, 1.13, -0.3); reg.castShadow = true; g.add(reg);
+    const regKeys = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.5 }));
+    regKeys.position.set(1.0, 1.30, -0.28); regKeys.rotation.x = -0.15; g.add(regKeys);
     const cash = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.24),
       new THREE.MeshStandardMaterial({ color: 0x3fa34d, roughness: 0.6 }));
     cash.position.set(-0.9, 1.07, 0.3); g.add(cash);

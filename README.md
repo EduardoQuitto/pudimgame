@@ -183,3 +183,19 @@ Gameplay (decisões, não só loop):
 Cenário: skyline, fios de catenária, transformador, rampas + piso tátil.
 Testes: fluxo completo de menus, presets com estados verificados, save após reload,
 matemática de venda simulada — zero erros de console.
+
+## Etapa 5 — reconstrução da direção de arte (geometria, não efeitos)
+
+Créditos atualizados: **Encomendado por Lucas Rocha**.
+- **Humanos**: membros cônicos com juntas (joelho/cotovelo), panturrilha, deltoides,
+  trapézio, colarinho com botões, punhos/barras, calçados com solado + cadarço, cinto com
+  fivela, cabelo sob o boné; pedestres com LOD (cabelo/olhos somem além de 26m),
+  motoristas com LOD (somem além de 22m).
+- **Carros**: colunas entre janelas, capô/porta-malas esculpidos, arcos das rodas.
+- **Arquitetura**: larguras variadas, cornijas, caixas d'água, ar-condicionado, antenas.
+- **Urbanos**: árvores de icosaedros facetados com galhos, postes com base/luminária,
+  sinal de pedestre que acompanha o ciclo, lixeiras com nervuras/tampa, bancos de ripas
+  em altura real, cones com faixa, hidrante, mesa de tábuas com etiquetas, drenos,
+  rampas, fios de catenária, skyline de fundo.
+- **Luz/UI**: removido AmbientLight chapado; abas da loja sem emoji; foco visível p/ teclado.
+Tudo verificado em 4 screenshots dirigidas (corpo, semáforo, barraca, rua).

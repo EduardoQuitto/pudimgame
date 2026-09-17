@@ -203,6 +203,9 @@ body.cb #hud-light.red { border-color:#ea580c; color:#fb923c; box-shadow:0 0 18p
 .btn:hover { transform:translateY(-1px); }
 .btn:active { transform:translateY(2px); border-bottom-width:1px; }
 .btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+.btn:focus-visible, .tab:focus-visible, .icon-btn:focus-visible, button:focus-visible {
+  outline:2px solid #ffd98a; outline-offset:2px;
+}
 .btn.primary { border-bottom-color:#3b0f8f; }
 .btn.danger { border-color:#7f1d1d88; border-bottom:3px solid #450a0a; }
 .tab { border-radius:4px; text-transform:uppercase; font-size:12px; letter-spacing:.6px; font-weight:700; }

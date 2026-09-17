@@ -99,7 +99,26 @@ class Car {
       const mir = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.08), bodyM);
       mir.position.set(L * 0.22, base + T.H + 0.1, dz); this.group.add(mir);
     }
-    // Vehicle → SteeringPivot → WheelMesh: rolamento em torno do eixo lateral (Z local).
+    // colunas do habitáculo: o vidro vira janelas entre colunas (não vitrine)
+    // + capô/porta-malas esculpidos + arcos das rodas. Rolamento: pivot → spin.
+    const cabCX = -L * 0.05, cabTop = base + T.H + T.cabH - 0.05, cabBot = base + T.H - 0.05;
+    for (const px of [cabCX - L * T.cabL / 2 + 0.08, cabCX + L * T.cabL / 2 - 0.08]) {
+      for (const pz of [-W * 0.40, W * 0.40]) {
+        const pil = new THREE.Mesh(new THREE.BoxGeometry(0.09, T.cabH, 0.07), bodyM);
+        pil.position.set(px, (cabTop + cabBot) / 2, pz); this.group.add(pil);
+      }
+    }
+    // capô e porta-malas com queda suave (silhueta, não caixa)
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(L * 0.24, 0.07, W * 0.94), bodyM);
+    hood.position.set(L / 2 - L * 0.12, base + T.H - 0.02, 0); hood.rotation.z = -0.07; this.group.add(hood);
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(L * 0.20, 0.07, W * 0.94), bodyM);
+    trunk.position.set(-L / 2 + L * 0.10, base + T.H - 0.02, 0); trunk.rotation.z = 0.07; this.group.add(trunk);
+    // arco das rodas (moldura escura estática sobre o pneu)
+    const archM = new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.9 });
+    for (const [dx, dz] of [[-L / 2 + 0.8, -W / 2 - 0.01], [L / 2 - 0.8, -W / 2 - 0.01], [-L / 2 + 0.8, W / 2 + 0.01], [L / 2 - 0.8, W / 2 + 0.01]]) {
+      const arch = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.035, 6, 12, Math.PI), archM);
+      arch.position.set(dx, 0.34, dz); this.group.add(arch);
+    }
     // O giro é geometria pré-rotacionada; mesh.rotation.z = rolagem pura (sem "moeda").
     const wheelM = new THREE.MeshStandardMaterial({ color: 0x0e0f11, roughness: 0.95 });
     const hubM = new THREE.MeshStandardMaterial({ color: 0xb8bfc9, roughness: 0.3, metalness: 0.8 });
@@ -156,22 +175,25 @@ class Car {
     const drvM = new THREE.MeshStandardMaterial({
       color: [0x2e5aa8, 0xa82e5a, 0x3a3a3a, 0x2e8a5a][i % 4], roughness: 0.85 });
     const drvSkin = new THREE.MeshStandardMaterial({ color: SKIN[i % SKIN.length], roughness: 0.65 });
+    // LOD: motorista some além de 22m (silhueta do carro continua)
+    this.driverDetail = new THREE.Group();
+    this.group.add(this.driverDetail);
     const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.28, 4, 8), drvM);
-    torso.position.set(-0.32, seatY + 0.10, 0.35); torso.rotation.z = 0.18; this.group.add(torso);
+    torso.position.set(-0.32, seatY + 0.10, 0.35); torso.rotation.z = 0.18; this.driverDetail.add(torso);
     const limb = (fx, fy, fz, tx, ty, tz, r, m) => {
       const a = new THREE.Vector3(fx, fy, fz), b = new THREE.Vector3(tx, ty, tz);
       const len = a.distanceTo(b);
       const limbM = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 2, 6), m);
       limbM.position.copy(a).lerp(b, 0.5);
       limbM.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
-      this.group.add(limbM);
+      this.driverDetail.add(limbM);
     };
     for (const s of [-1, 1]) {
       const sz2 = 0.35 + s * 0.10;
       limb(-0.28, seatY + 0.20, sz2, 0.10, seatY - 0.02, 0.35 + s * 0.13, 0.05, drvM); // braço
       limb(0.10, seatY - 0.02, 0.35 + s * 0.13, 0.24, seatY + 0.09, 0.35 + s * 0.10, 0.042, drvSkin); // antebraço
       const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), drvSkin);
-      hand.position.set(0.24, seatY + 0.09, 0.35 + s * 0.10); this.group.add(hand);
+      hand.position.set(0.24, seatY + 0.09, 0.35 + s * 0.10); this.driverDetail.add(hand);
     }
     this.head = new THREE.Group();
     this.head.position.set(-0.28, seatY + 0.44, 0.35);
@@ -183,7 +205,7 @@ class Car {
       const e = new THREE.Mesh(new THREE.SphereGeometry(0.024, 6, 6), dEyeM);
       e.position.set(0.115, 0.02, s * 0.055); this.head.add(e);
     }
-    this.group.add(this.head);
+    this.driverDetail.add(this.head);
     // volante
     const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 6, 12),
       new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.6 }));
@@ -250,7 +272,7 @@ export class Traffic {
       queue.forEach((c, idx) => { c.goDelay = idx * 0.35 + Math.random() * 0.25; });
     }
   }
-  update(dt, light, luckLvl, rng = Math.random, playerPos = null, saleCar = null) {
+  update(dt, light, luckLvl, rng = Math.random, playerPos = null, saleCar = null, camPos = null) {
     this.now += dt;
     const intense = this.now < this.intenseUntil;
     const maxCars = intense ? 10 : 6 + Math.round(this.difficulty * 3);
@@ -262,6 +284,11 @@ export class Traffic {
     }
     for (const c of this.cars) {
       if (!c.active) continue;
+      // LOD do motorista: some além de 22m (carro continua idêntico de longe)
+      if (camPos) {
+        const far = (c.x - camPos.x) ** 2 + (c.z - camPos.z) ** 2 > 22 * 22;
+        if (c.driverDetail.visible === far) c.driverDetail.visible = !far;
+      }
       const lane = c.lane;
       let target = c.baseSpeed * c.vmaxK * (1 + this.difficulty * 0.25);
       const distToStop = (lane.stopX - c.x) * lane.dir;

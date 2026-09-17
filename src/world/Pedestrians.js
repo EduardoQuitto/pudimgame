@@ -8,8 +8,9 @@ const PANTS = [0x2e3138, 0x4a3b2c, 0x2c3e50, 0x555560, 0x1f2422];
 const HAIR_C = [0x1a1210, 0x2e1c10, 0x555555, 0x8a8a8a, 0x4a2c14];
 
 function addHair(head, style, color) {
+  const lod = []; // meshes que somem à distância (LOD real)
   const m = new THREE.MeshStandardMaterial({ color, roughness: 0.95 });
-  const add = (mm) => { head.add(mm); return mm; };
+  const add = (mm) => { head.add(mm); lod.push(mm); return mm; };
   if (style === 0) { // curto rente (cobre o topo do crânio, sem enterrar)
     const h = add(new THREE.Mesh(new THREE.SphereGeometry(0.21, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), m));
     h.position.y = 0.14; h.scale.set(1, 0.75, 1);
@@ -30,6 +31,7 @@ function addHair(head, style, color) {
     back.position.set(0, -0.02, -0.19);
   }
   // estilo 4 = careca
+  return lod;
 }
 
 class Ped {
@@ -44,7 +46,8 @@ class Ped {
       iris: [0x3a2415, 0x1a2a1a, 0x2a1a2a][i % 3],
     });
     this.P = parts; this.g = group;
-    addHair(parts.head, i % 5, HAIR_C[(rng() * HAIR_C.length) | 0]);
+    this.lodMeshes = addHair(parts.head, i % 5, HAIR_C[(rng() * HAIR_C.length) | 0]);
+    this.lodMeshes.push(...parts.eyes);
     const hScale = 0.90 + rng() * 0.12;
     group.scale.set(hScale * (0.95 + rng() * 0.1), hScale, hScale);
     group.traverse(o => { if (o.isMesh) o.castShadow = false; }); // fundo: sem sombra
@@ -63,9 +66,14 @@ export class Peds {
   constructor(scene) {
     this.list = [new Ped(scene, 0), new Ped(scene, 1), new Ped(scene, 2), new Ped(scene, 3)];
   }
-  update(dt, carsMayGo, t) {
+  update(dt, carsMayGo, t, camPos = null) {
     for (const p of this.list) {
       const P = p.P;
+      // LOD: além de 26m, cabelo e olhos somem (silhueta continua idêntica)
+      if (camPos) {
+        const far = (p.x - camPos.x) ** 2 + (p.z - camPos.z) ** 2 > 26 * 26;
+        if (far !== p._far) { p._far = far; for (const m of p.lodMeshes) m.visible = !far; }
+      }
       if (p.mode === 'walk') {
         p.x += p.dir * p.speed * dt;
         if (p.x > 30) { p.x = 30; p.dir = -1; }

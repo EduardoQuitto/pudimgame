@@ -38,6 +38,21 @@ export class Player {
     const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.03, 10),
       new THREE.MeshStandardMaterial({ color: PURPLE, roughness: 0.3, emissive: PURPLE, emissiveIntensity: 0.25 }));
     pin.position.set(0, 0.245, 0.175); pin.rotation.x = 0.6; P.head.add(pin);
+    // cabelo: franja nas têmporas + nuca (nada de careca sob o boné)
+    const hairM = new THREE.MeshStandardMaterial({ color: 0x1c1210, roughness: 0.95 });
+    for (const sx of [-1, 1]) {
+      const tuft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.08), hairM);
+      tuft.position.set(sx * 0.20, 0.02, 0.06); tuft.rotation.z = sx * -0.15; P.head.add(tuft);
+    }
+    const nape = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.10, 0.06), hairM);
+    nape.position.set(0, -0.02, -0.20); P.head.add(nape);
+    // cinto com fivela (separação camisa/calça)
+    const beltM = new THREE.MeshStandardMaterial({ color: 0x2a1c12, roughness: 0.6 });
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.20, 0.07, 12), beltM);
+    belt.position.set(0, 0.02, 0); P.torso.add(belt);
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0xb8a43a, metalness: 0.8, roughness: 0.3 }));
+    buckle.position.set(0, 0.02, 0.20); P.torso.add(buckle);
     // ---- avental de couro em camadas + bolso de dinheiro ----
     const apronM = clothMat(0x6b4a2f, 0.8);
     const ap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.06), apronM);

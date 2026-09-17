@@ -168,7 +168,7 @@ export class Game {
     this.sun.shadow.mapSize.set(1024, 1024);
     this.sun.shadow.bias = -0.0004;
     this.scene.add(this.sun, this.sun.target);
-    this.scene.add(new THREE.AmbientLight(0x404060, 0.35));
+    // sem AmbientLight chapado: hemisphere + preenchimento dirigem a cena
     // preenchimento frio do leste: define formas sem lavar a cena
     this.fill = new THREE.DirectionalLight(0x6a7fd0, 0.45);
     this.fill.position.set(30, 22, 25);
@@ -589,7 +589,7 @@ export class Game {
         this.camera.lookAt(0, 1.5, 0);
         this.light.update(dt);
         this.traffic.update(dt, this.light, this.upgrades.luck);
-        this.peds.update(dt, this.light.carsMayGo, t);
+        this.peds.update(dt, this.light.carsMayGo, t, this.camera.position);
         this.weather.update(dt, 0);
         this.effects.update(dt, this.weather.raining);
       }
@@ -610,8 +610,8 @@ export class Game {
     // 1) semáforo + trânsito + clima + eventos + pedestres
     this.light.update(dt);
     this.traffic.update(dt, this.light, this.upgrades.luck, Math.random,
-      this.player.pos, this.selling.active ? this.selling.active.car : null);
-    this.peds.update(dt, this.light.carsMayGo, performance.now() / 1000);
+      this.player.pos, this.selling.active ? this.selling.active.car : null, this.camera.position);
+    this.peds.update(dt, this.light.carsMayGo, performance.now() / 1000, this.camera.position);
     this.weather.update(dt, this.player.pos.x);
     const ev = this.events.update(dt, this.upgrades.luck);
     if (ev) this.ui.banner(ev.title, ev.sub, 5);
